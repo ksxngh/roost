@@ -5,6 +5,7 @@ import { useState } from "react";
 
 import { BrandMark } from "@/components/brand-mark";
 import { SidebarNav } from "@/components/shell/sidebar-nav";
+import { UserMenu, type UserMenuUser } from "@/components/shell/user-menu";
 import { ThemeToggle } from "@/components/theme-toggle";
 import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
@@ -22,7 +23,13 @@ import { appNav, settingsNav } from "@/lib/site-config";
  * drawer on mobile, sticky topbar with theme control. Pages render into the
  * scrollable main region.
  */
-export function AppShell({ children }: { children: React.ReactNode }) {
+export function AppShell({
+  user,
+  children,
+}: {
+  user: UserMenuUser;
+  children: React.ReactNode;
+}) {
   const [mobileNavOpen, setMobileNavOpen] = useState(false);
 
   return (
@@ -72,6 +79,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
           </Sheet>
           <div className="flex-1" />
           <ThemeToggle />
+          <UserMenu user={user} />
         </header>
         <main className="flex-1 p-4 md:p-8">{children}</main>
       </div>

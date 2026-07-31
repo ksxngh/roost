@@ -1,9 +1,14 @@
 import { AppShell } from "@/components/shell/app-shell";
+import { requireSession } from "@/server/session";
 
-// Authentication is wired in Milestone 2; this layout will then verify the
-// session server-side and redirect signed-out visitors to /login.
-export default function AppLayout({
+/** Everything inside this group requires an authenticated session. */
+export default async function AppLayout({
   children,
 }: Readonly<{ children: React.ReactNode }>) {
-  return <AppShell>{children}</AppShell>;
+  const { user } = await requireSession();
+  return (
+    <AppShell user={{ name: user.name, email: user.email, image: user.image }}>
+      {children}
+    </AppShell>
+  );
 }

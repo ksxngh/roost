@@ -1,22 +1,28 @@
 # Architecture
 
-## Current state (after Milestone 1)
+## Current state (after Milestone 2)
 
-StudyForge is a single Next.js application. The App Router serves both the
-marketing site and the authenticated app shell; there is no database or
-external service yet.
+StudyForge is a single Next.js application backed by PostgreSQL. The App
+Router serves the marketing site, the auth pages, and the session-protected
+app shell.
 
 ```mermaid
 flowchart LR
-    subgraph Browser
-        U[User]
+    U[Browser]
+    subgraph "Next.js"
+        M["Marketing + auth pages\n(/, /login, /signup)"]
+        A["Protected app\n(app) route group"]
+        H["/api/auth/[...all]\nBetter Auth handler"]
     end
-    subgraph "Next.js (Vercel)"
-        M["Marketing pages\n(/, static)"]
-        A["App shell\n(/dashboard, /library, …)"]
-    end
+    DB[("PostgreSQL\nuser · session · account")]
+    MAIL["Mailer\nconsole | Resend"]
+
     U --> M
     U --> A
+    U --> H
+    A -->|requireSession| DB
+    H --> DB
+    H --> MAIL
 ```
 
 ## Target architecture
@@ -61,10 +67,26 @@ Key properties:
   owned code, but customizations belong in wrapper components, not the
   generated files.
 
+## Server layer
+
+`src/server/` holds framework-agnostic server code, kept out of route handlers
+so it stays testable and extractable ([ADR-0001](adr/0001-nextjs-fullstack.md)):
+
+| Module       | Responsibility                                              |
+| ------------ | ----------------------------------------------------------- |
+| `db.ts`      | Prisma singleton (globalThis-cached against dev HMR)        |
+| `auth.ts`    | Better Auth configuration: sessions, rate limits, providers |
+| `session.ts` | `getSession` (request-cached) and the `requireSession` gate |
+| `mailer.ts`  | `Mailer` interface + console/Resend transports              |
+
+Swappable dependencies are expressed as interfaces with a factory that picks
+the implementation from configuration (`createMailer`). The same pattern will
+carry storage (S3/R2), the vector store, and AI providers.
+
 ## Conventions
 
 - `src/lib/env.ts` is the only place `process.env` is read on the server;
-  everything else imports the validated `env` object.
+  everything else calls the validated `serverEnv()`.
 - `src/lib/site-config.ts` owns product identity and navigation.
 - Route groups: `(app)` wraps everything behind the (future) auth gate.
 - Tests live next to the code they cover (`*.test.ts[x]`), with shared setup

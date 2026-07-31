@@ -2,7 +2,7 @@
 
 An AI-powered study platform: upload lecture notes, PDFs, and slides, and StudyForge turns them into flashcards, quizzes, summaries, and an AI tutor that answers only from your material.
 
-> **Status:** Milestone 1 (Foundation) complete. See [docs/roadmap.md](docs/roadmap.md) for what ships next.
+> **Status:** Milestone 2 (Database & Auth) complete. See [docs/roadmap.md](docs/roadmap.md) for what ships next.
 
 ## Stack
 
@@ -11,16 +11,28 @@ An AI-powered study platform: upload lecture notes, PDFs, and slides, and StudyF
 | Framework | Next.js (App Router) + React + strict TypeScript | One deployable, RSC, native streaming; see [ADR-0001](docs/adr/0001-nextjs-fullstack.md) |
 | Styling   | Tailwind CSS v4 + shadcn/ui                      | Token-driven theming, owned components                                                   |
 | Testing   | Vitest + Testing Library                         | Fast, jsdom component + unit tests                                                       |
-| Auth      | Better Auth (Milestone 2)                        | See [ADR-0002](docs/adr/0002-better-auth.md)                                             |
-| Database  | PostgreSQL + Prisma + pgvector (Milestone 2+)    | See [ADR-0003](docs/adr/0003-pgvector.md)                                                |
+| Auth      | Better Auth                                      | See [ADR-0002](docs/adr/0002-better-auth.md)                                             |
+| Database  | PostgreSQL 18 + Prisma 7 (+ pgvector, M4)        | See [ADR-0003](docs/adr/0003-pgvector.md)                                                |
 
 ## Getting started
 
+Requires Node 24 and PostgreSQL 18 with pgvector.
+
+```bash
+brew install pgvector postgresql@18 && brew services start postgresql@18
+createdb studyforge && createdb studyforge_test
+```
+
 ```bash
 npm install
-cp .env.example .env.local   # defaults work for local dev
-npm run dev                  # http://localhost:3000
+cp .env.example .env
+openssl rand -base64 32          # paste into BETTER_AUTH_SECRET
+npx prisma migrate dev
+npm run dev                      # http://localhost:3000
 ```
+
+Sign up at `/signup`. With no email provider configured, the verification
+link prints to the server log — copy it from the terminal.
 
 ## Scripts
 
@@ -39,21 +51,28 @@ npm run dev                  # http://localhost:3000
 ## Project layout
 
 ```
+prisma/           # Schema + migrations
 src/
   app/            # App Router routes
-    (app)/        # Authenticated app shell (dashboard, library, …)
+    (app)/        # Session-protected app (dashboard, library, …)
+    (auth)/       # Login, signup, password reset
+    api/auth/     # Better Auth HTTP handler
     page.tsx      # Marketing landing page
   components/
-    shell/        # App frame (sidebar, topbar, mobile drawer)
+    auth/         # Auth forms and fields
+    shell/        # App frame (sidebar, topbar, user menu)
     ui/           # shadcn/ui primitives (generated, not hand-edited)
-  lib/            # Config, env validation, utilities
-  test/           # Test setup
-docs/             # Architecture, ADRs, roadmap, testing docs
+  lib/            # Config, env validation, validation schemas, utilities
+  server/         # DB, auth, session, mailer — framework-agnostic
+  test/           # Test setup and global setup
+docs/             # Architecture, ADRs, roadmap, auth, database, testing
 ```
 
 ## Documentation
 
 - [Architecture](docs/architecture.md)
+- [Authentication](docs/auth.md)
+- [Database](docs/database.md)
 - [Roadmap](docs/roadmap.md)
 - [Testing](docs/testing.md)
 - [Decision records](docs/adr/)

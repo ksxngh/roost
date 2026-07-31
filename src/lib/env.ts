@@ -1,18 +1,33 @@
 import { z } from "zod";
 
 /**
- * Environment contract. Server code must import `env` from this module instead
- * of touching `process.env` so that a missing or malformed variable fails at
- * boot with a readable message, not at request time deep in a handler.
+ * Environment contract. Server code must call `serverEnv()` instead of
+ * touching `process.env` so that a missing or malformed variable fails fast
+ * with a readable message — at first use, not at request time deep in a
+ * handler.
  *
- * Variables are optional until the milestone that consumes them makes them
- * required — the schema is the single place where that graduation happens.
+ * Variables graduate from optional to required in the milestone that consumes
+ * them; this schema is the single place where that happens.
  */
 const serverSchema = z.object({
   NODE_ENV: z
     .enum(["development", "test", "production"])
     .default("development"),
-  DATABASE_URL: z.url({ protocol: /^postgres(ql)?$/ }).optional(),
+  // Required since Milestone 2 (database & auth).
+  DATABASE_URL: z.url({ protocol: /^postgres(ql)?$/ }),
+  BETTER_AUTH_SECRET: z
+    .string()
+    .min(
+      32,
+      "must be at least 32 characters; generate with `openssl rand -base64 32`",
+    ),
+  // Optional: Google OAuth activates when both are present.
+  GOOGLE_CLIENT_ID: z.string().min(1).optional(),
+  GOOGLE_CLIENT_SECRET: z.string().min(1).optional(),
+  // Optional: real email delivery activates when present (console otherwise).
+  RESEND_API_KEY: z.string().min(1).optional(),
+  EMAIL_FROM: z.email().default("noreply@studyforge.local"),
+  // Required from Milestone 3 (queues, rate limiting).
   REDIS_URL: z.url({ protocol: /^rediss?$/ }).optional(),
 });
 
@@ -57,4 +72,10 @@ export function parseClientEnv(
   return result.data;
 }
 
-export const env: ServerEnv = parseServerEnv();
+let cachedServerEnv: ServerEnv | undefined;
+
+/** Validated server environment; parsed once on first use. */
+export function serverEnv(): ServerEnv {
+  cachedServerEnv ??= parseServerEnv();
+  return cachedServerEnv;
+}

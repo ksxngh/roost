@@ -41,10 +41,10 @@ export default function LandingPage() {
         <div className="flex items-center gap-2">
           <ThemeToggle />
           <Button asChild variant="ghost">
-            <Link href="/dashboard">Sign in</Link>
+            <Link href="/login">Sign in</Link>
           </Button>
           <Button asChild>
-            <Link href="/dashboard">
+            <Link href="/signup">
               Get started
               <ArrowRight className="size-4" aria-hidden="true" />
             </Link>
@@ -62,7 +62,7 @@ export default function LandingPage() {
           </p>
           <div className="mt-10 flex gap-3">
             <Button asChild size="lg">
-              <Link href="/dashboard">
+              <Link href="/signup">
                 Start studying free
                 <ArrowRight className="size-4" aria-hidden="true" />
               </Link>
