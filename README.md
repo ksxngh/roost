@@ -1,36 +1,64 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# StudyForge
 
-## Getting Started
+An AI-powered study platform: upload lecture notes, PDFs, and slides, and StudyForge turns them into flashcards, quizzes, summaries, and an AI tutor that answers only from your material.
 
-First, run the development server:
+> **Status:** Milestone 1 (Foundation) complete. See [docs/roadmap.md](docs/roadmap.md) for what ships next.
+
+## Stack
+
+| Layer     | Choice                                           | Rationale                                                                                |
+| --------- | ------------------------------------------------ | ---------------------------------------------------------------------------------------- |
+| Framework | Next.js (App Router) + React + strict TypeScript | One deployable, RSC, native streaming; see [ADR-0001](docs/adr/0001-nextjs-fullstack.md) |
+| Styling   | Tailwind CSS v4 + shadcn/ui                      | Token-driven theming, owned components                                                   |
+| Testing   | Vitest + Testing Library                         | Fast, jsdom component + unit tests                                                       |
+| Auth      | Better Auth (Milestone 2)                        | See [ADR-0002](docs/adr/0002-better-auth.md)                                             |
+| Database  | PostgreSQL + Prisma + pgvector (Milestone 2+)    | See [ADR-0003](docs/adr/0003-pgvector.md)                                                |
+
+## Getting started
 
 ```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+npm install
+cp .env.example .env.local   # defaults work for local dev
+npm run dev                  # http://localhost:3000
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+## Scripts
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+| Script                  | Purpose                 |
+| ----------------------- | ----------------------- |
+| `npm run dev`           | Dev server (Turbopack)  |
+| `npm run build`         | Production build        |
+| `npm run test`          | Run the test suite once |
+| `npm run test:watch`    | Watch mode              |
+| `npm run test:coverage` | Coverage report         |
+| `npm run lint`          | ESLint                  |
+| `npm run typecheck`     | `tsc --noEmit`          |
+| `npm run format`        | Prettier write          |
+| `npm run format:check`  | Prettier check (CI)     |
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+## Project layout
 
-## Learn More
+```
+src/
+  app/            # App Router routes
+    (app)/        # Authenticated app shell (dashboard, library, …)
+    page.tsx      # Marketing landing page
+  components/
+    shell/        # App frame (sidebar, topbar, mobile drawer)
+    ui/           # shadcn/ui primitives (generated, not hand-edited)
+  lib/            # Config, env validation, utilities
+  test/           # Test setup
+docs/             # Architecture, ADRs, roadmap, testing docs
+```
 
-To learn more about Next.js, take a look at the following resources:
+## Documentation
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+- [Architecture](docs/architecture.md)
+- [Roadmap](docs/roadmap.md)
+- [Testing](docs/testing.md)
+- [Decision records](docs/adr/)
+- [Changelog](CHANGELOG.md)
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+## Quality gates
 
-## Deploy on Vercel
-
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+CI (GitHub Actions) runs lint, format check, typecheck, tests, and a production build on every push and PR. All five must pass before merge.
