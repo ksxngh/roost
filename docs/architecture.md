@@ -72,12 +72,17 @@ Key properties:
 `src/server/` holds framework-agnostic server code, kept out of route handlers
 so it stays testable and extractable ([ADR-0001](adr/0001-nextjs-fullstack.md)):
 
-| Module       | Responsibility                                              |
-| ------------ | ----------------------------------------------------------- |
-| `db.ts`      | Prisma singleton (globalThis-cached against dev HMR)        |
-| `auth.ts`    | Better Auth configuration: sessions, rate limits, providers |
-| `session.ts` | `getSession` (request-cached) and the `requireSession` gate |
-| `mailer.ts`  | `Mailer` interface + console/Resend transports              |
+| Module          | Responsibility                                              |
+| --------------- | ----------------------------------------------------------- |
+| `db.ts`         | Prisma singleton (globalThis-cached against dev HMR)        |
+| `auth.ts`       | Better Auth configuration: sessions, rate limits, providers |
+| `session.ts`    | `getSession` (request-cached) and the `requireSession` gate |
+| `mailer.ts`     | `Mailer` interface + console/Resend transports              |
+| `storage/`      | `Storage` interface + local/S3 drivers                      |
+| `documents/`    | Upload validation, upload service, processing               |
+| `parsing/`      | Per-format text extraction (PDF, DOCX, PPTX, text, OCR)     |
+| `queue/`        | Redis connection and BullMQ queues                          |
+| `rate-limit.ts` | Redis fixed-window limiter for expensive endpoints          |
 
 Swappable dependencies are expressed as interfaces with a factory that picks
 the implementation from configuration (`createMailer`). The same pattern will

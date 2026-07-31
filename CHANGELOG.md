@@ -4,6 +4,53 @@ All notable changes to StudyForge are documented here. Format follows
 [Keep a Changelog](https://keepachangelog.com/); versions follow semver
 (pre-1.0: minor = milestone).
 
+## [0.3.0] — 2026-07-31 · Milestone 3A: Content pipeline
+
+### Added
+
+- Domain schema: classes, nestable folders, documents, per-page extracted
+  text, tags, and the document/tag join — with soft delete, favorites,
+  archiving, and per-user checksum uniqueness.
+- `Storage` abstraction with a filesystem driver (default, atomic writes) and
+  an S3-compatible driver for AWS S3, Cloudflare R2, and MinIO.
+- `POST /api/documents`: authenticated multipart upload with validation,
+  duplicate detection, and job enqueueing.
+- Text extraction for PDF (`unpdf`), Word (`mammoth`), PowerPoint (`jszip`,
+  one page per slide), plain text/Markdown, and images via OCR
+  (`tesseract.js`). Formats without real pages are paginated on paragraph
+  boundaries so citations stay coherent.
+- BullMQ queue on Redis plus a standalone worker process (`npm run worker`)
+  with retries, exponential backoff, dedupe, and graceful drain on SIGTERM.
+- Redis fixed-window rate limiter shared across instances, applied to uploads
+  (30 per 10 minutes per user).
+- CI gains a `redis:8-alpine` service container.
+- `docs/content-pipeline.md` documenting the flow, validation rules, drivers,
+  parsers, and known limitations.
+
+### Security
+
+- Uploads are validated by **magic bytes**, not the browser-supplied MIME
+  type: an executable renamed `.pdf` is rejected, as is binary content
+  disguised as `.txt`.
+- Storage keys are generated server-side (`<userId>/<uuid>.<ext>`) and
+  validated against traversal, absolute paths, backslashes, and null bytes;
+  filenames never reach the filesystem.
+- Filing a document into another user's class or folder is rejected
+  (IDOR prevention), covered by tests.
+- S3 objects are written with `Content-Disposition: attachment` so user
+  content cannot render inline from the bucket origin.
+- Parse failures surface student-facing messages; internal errors and stack
+  traces never reach the UI.
+
+### Fixed
+
+- BullMQ rejects custom job ids containing `:`, which would have thrown on
+  every upload. Job ids now use `document-<id>`, with a regression test.
+- The worker process did not load `.env`, so it could not start outside
+  Next.js. It now uses Node's `--env-file-if-exists`.
+- Test files now run sequentially: integration suites share one database and
+  were deleting each other's fixtures when run in parallel.
+
 ## [0.2.0] — 2026-07-31 · Milestone 2: Database & Auth
 
 ### Added

@@ -27,8 +27,21 @@ const serverSchema = z.object({
   // Optional: real email delivery activates when present (console otherwise).
   RESEND_API_KEY: z.string().min(1).optional(),
   EMAIL_FROM: z.email().default("noreply@studyforge.local"),
-  // Required from Milestone 3 (queues, rate limiting).
-  REDIS_URL: z.url({ protocol: /^rediss?$/ }).optional(),
+  // Queues and background jobs.
+  REDIS_URL: z.url({ protocol: /^rediss?$/ }).default("redis://localhost:6379"),
+
+  // Object storage. With no bucket configured the app falls back to the
+  // filesystem driver, so local development needs no cloud account.
+  S3_BUCKET: z.string().min(1).optional(),
+  S3_REGION: z.string().min(1).default("auto"),
+  S3_ACCESS_KEY_ID: z.string().min(1).optional(),
+  S3_SECRET_ACCESS_KEY: z.string().min(1).optional(),
+  /** Set for S3-compatible providers such as Cloudflare R2. */
+  S3_ENDPOINT: z.url({ protocol: /^https?$/ }).optional(),
+  LOCAL_STORAGE_DIR: z.string().min(1).default(".storage"),
+
+  /** Hard ceiling on a single upload, in megabytes. */
+  MAX_UPLOAD_MB: z.coerce.number().int().positive().max(200).default(25),
 });
 
 const clientSchema = z.object({

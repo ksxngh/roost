@@ -2,10 +2,75 @@
 
 PostgreSQL 18 with the pgvector extension, accessed through Prisma 7.
 
-## Schema (after Milestone 2)
+## Schema
 
-Authentication tables are generated and owned by Better Auth's CLI; domain
-tables (classes, documents, flashcards, …) arrive in Milestone 3.
+Authentication tables are generated and owned by Better Auth's CLI. Domain
+tables are hand-written in the same file.
+
+> ⚠️ `npx @better-auth/cli generate` **overwrites `schema.prisma`**. After
+> running it, re-add the domain models and the `User` back-relations
+> (`classes`, `folders`, `documents`, `tags`) — there is a comment in the file
+> marking them.
+
+```mermaid
+erDiagram
+    user ||--o{ class : owns
+    user ||--o{ folder : owns
+    user ||--o{ document : owns
+    user ||--o{ tag : owns
+    class ||--o{ folder : contains
+    class ||--o{ document : contains
+    folder ||--o{ folder : nests
+    folder ||--o{ document : contains
+    document ||--o{ document_page : "extracted into"
+    document ||--o{ document_tag : has
+    tag ||--o{ document_tag : applied_via
+
+    document {
+        string id PK
+        string title
+        enum kind "PDF DOCX PPTX TEXT MARKDOWN IMAGE"
+        enum status "PENDING PROCESSING READY FAILED"
+        string storageKey UK
+        string checksum "sha256, unique per user"
+        int sizeBytes
+        int pageCount
+        int wordCount
+        string processingError
+        boolean favorite
+        datetime archivedAt
+        datetime deletedAt "soft delete"
+    }
+    document_page {
+        string id PK
+        string documentId FK
+        int pageNumber "1-based, for citations"
+        string text
+    }
+    class {
+        string id PK
+        string name "unique per user"
+        string color
+        datetime archivedAt
+    }
+    folder {
+        string id PK
+        string name
+        string classId FK "nullable"
+        string parentId FK "self-relation"
+    }
+    tag {
+        string id PK
+        string name "unique per user"
+        string color
+    }
+```
+
+Deletion behaviour is deliberate: removing a user or class cascades to its
+content, but deleting a class only _detaches_ its documents
+(`onDelete: SetNull`) so a student never loses uploads by tidying up.
+
+### Authentication tables
 
 ```mermaid
 erDiagram

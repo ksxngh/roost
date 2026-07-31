@@ -37,10 +37,16 @@ Integration tests truncate tables between cases and assert the database name
 contains `studyforge_test` before any destructive operation — a guard against
 ever pointing the suite at a real database.
 
-CI runs the same suite against a `pgvector/pgvector:pg18` service container
-via `TEST_DATABASE_URL`.
+Test files run **sequentially** (`fileParallelism: false`): integration files
+share one database and truncate tables between cases, so parallel files would
+delete each other's fixtures. The suite runs in about nine seconds, so the
+cost is negligible. Vitest projects separate the jsdom (`unit`) and node
+(`integration`) environments.
 
-## Current suite (61 tests)
+CI runs the same suite against `pgvector/pgvector:pg18` and `redis:8-alpine`
+service containers via `TEST_DATABASE_URL` and `REDIS_URL`.
+
+## Current suite (164 tests)
 
 | Area                          | Coverage                                                                                                                                                                                                    |
 | ----------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
@@ -53,6 +59,12 @@ via `TEST_DATABASE_URL`.
 | `SidebarNav`                  | Landmark + links, aria-current on active/nested/unknown routes, empty list, onNavigate                                                                                                                      |
 | `ThemeToggle`                 | Accessible trigger, menu options, setTheme wiring                                                                                                                                                           |
 | `EmptyState`                  | Content rendering, optional action slot                                                                                                                                                                     |
+| `storage/local-storage`       | Round-trip, binary safety, atomic overwrite, missing keys, no temp-file leakage, path-traversal rejection (traversal, absolute, backslash, null byte)                                                       |
+| `documents/validate-upload`   | Title sanitization (path components, control chars, unicode), storage-key generation, size/extension limits, content-mismatch rejection of disguised executables, images, and binary-as-text                |
+| `parsing/*`                   | Text normalization, paragraph-safe pagination with no content loss, PPTX slide extraction and entity decoding, numeric slide ordering, corrupt/empty handling, parser dispatch                              |
+| `documents` _(integration)_   | Upload → storage → row → parse, per-user duplicate rules, cross-user IDOR rejection for classes and folders, idempotent reprocessing, actionable failure messages, cascade deletes                          |
+| `queue` _(integration)_       | Real BullMQ delivery, job-id dedupe, retry/backoff, job-id format guard                                                                                                                                     |
+| `rate-limit` _(integration)_  | Limit enforcement, remaining counts, per-key isolation, TTL, window rollover                                                                                                                                |
 
-Playwright E2E arrives in Milestone 3, once there are multi-step flows
-(upload → parse → study) worth driving in a real browser.
+Playwright E2E arrives with Milestone 3B, once the library UI makes the
+upload → parse → study flow drivable in a real browser.
