@@ -30,6 +30,12 @@ Items deliberately deferred, so they don't get lost:
 - **Streaming uploads** — the upload route buffers the file in memory, which
   is fine at 25 MB but would need streaming multipart parsing to go much
   higher. See [content-pipeline.md](content-pipeline.md#known-limitations).
+- **Nested folder navigation** — the schema supports nesting and `moveFolder`
+  rejects cycles (tested), but the UI is one level deep, so
+  `moveFolderAction` has no caller yet. Needs breadcrumbs and a move-folder
+  control. See [library.md](library.md#known-limitations).
+- **Library pagination UI** — cursor pagination exists and is tested in the
+  service layer; the page still renders only the first 50 documents.
 - **Email verification enforcement** — verification mail is sent but sign-in
   is not blocked on it. Flip to required once a production email provider is
   configured (Milestone 10 at the latest).

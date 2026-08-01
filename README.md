@@ -2,8 +2,8 @@
 
 An AI-powered study platform: upload lecture notes, PDFs, and slides, and StudyForge turns them into flashcards, quizzes, summaries, and an AI tutor that answers only from your material.
 
-> **Status:** Milestone 3A (content pipeline) complete — uploads, parsing, and
-> background processing work end to end. The library UI lands in 3B. See
+> **Status:** Milestone 3 complete — upload, parse, organize, and search all
+> work end to end. Milestone 4 adds the AI features. See
 > [docs/roadmap.md](docs/roadmap.md).
 
 ## Stack
@@ -65,11 +65,14 @@ src/
     page.tsx      # Marketing landing page
   components/
     auth/         # Auth forms and fields
+    library/      # Library UI: cards, dialogs, folders, upload, search
     shell/        # App frame (sidebar, topbar, user menu)
     ui/           # shadcn/ui primitives (generated, not hand-edited)
   lib/            # Config, env validation, validation schemas, utilities
+  hooks/          # Reusable client hooks
   server/         # Framework-agnostic server code
     documents/    # Upload validation, upload service, processing
+    library/      # Classes, folders, tags, documents + server actions
     parsing/      # PDF, DOCX, PPTX, text, and OCR extraction
     queue/        # Redis connection and BullMQ queues
     storage/      # Storage interface + local/S3 drivers
@@ -83,6 +86,7 @@ docs/             # Architecture, ADRs, roadmap, auth, database, testing
 - [Architecture](docs/architecture.md)
 - [Authentication](docs/auth.md)
 - [Content pipeline](docs/content-pipeline.md)
+- [Library](docs/library.md)
 - [Database](docs/database.md)
 - [Roadmap](docs/roadmap.md)
 - [Testing](docs/testing.md)

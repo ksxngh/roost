@@ -14,6 +14,9 @@
 - Mock at the module boundary (`next/navigation`, `next-themes`), not deeper.
 - Generated shadcn primitives in `src/components/ui/` are excluded from
   coverage; we test our composition of them instead.
+- `src/test/setup.ts` polyfills the Pointer Capture API and `scrollIntoView`,
+  which jsdom lacks and Radix primitives require — without them Select and
+  DropdownMenu silently never render their content in tests.
 
 ## Running
 
@@ -46,7 +49,7 @@ cost is negligible. Vitest projects separate the jsdom (`unit`) and node
 CI runs the same suite against `pgvector/pgvector:pg18` and `redis:8-alpine`
 service containers via `TEST_DATABASE_URL` and `REDIS_URL`.
 
-## Current suite (164 tests)
+## Current suite (240 tests)
 
 | Area                          | Coverage                                                                                                                                                                                                    |
 | ----------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
@@ -65,6 +68,14 @@ service containers via `TEST_DATABASE_URL` and `REDIS_URL`.
 | `documents` _(integration)_   | Upload → storage → row → parse, per-user duplicate rules, cross-user IDOR rejection for classes and folders, idempotent reprocessing, actionable failure messages, cascade deletes                          |
 | `queue` _(integration)_       | Real BullMQ delivery, job-id dedupe, retry/backoff, job-id format guard                                                                                                                                     |
 | `rate-limit` _(integration)_  | Limit enforcement, remaining counts, per-key isolation, TTL, window rollover                                                                                                                                |
+| `lib/format`                  | Byte scaling, relative-time boundaries, pluralization including irregulars                                                                                                                                  |
+| `library` _(integration)_     | Per-user scoping of every query, cross-user rejection of every mutation, folder cycle prevention, duplicate names, archive/trash/restore, cursor pagination without overlap, tag counts                     |
+| `DocumentCard`                | Metadata display, singular/plural pages, failure reasons, tags, favorites, and that trash-view actions replace destructive library actions                                                                  |
+| `DocumentStatusBadge`         | Labels per status, polite announcements while in flight, silent once settled                                                                                                                                |
+| `LibrarySidebar`              | View links, active state, accessible names including a meaningful document count                                                                                                                            |
+| `MoveDialog`                  | Class options, folder options filtered to the selected class, null destinations                                                                                                                             |
 
-Playwright E2E arrives with Milestone 3B, once the library UI makes the
-upload → parse → study flow drivable in a real browser.
+The upload → parse → organize flow has also been exercised manually in a real
+browser against a running worker. Playwright E2E is scheduled for Milestone 9
+alongside the rest of the hardening work, once the feature surface stops
+moving weekly.

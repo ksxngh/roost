@@ -4,6 +4,57 @@ All notable changes to StudyForge are documented here. Format follows
 [Keep a Changelog](https://keepachangelog.com/); versions follow semver
 (pre-1.0: minor = milestone).
 
+## [0.4.0] — 2026-07-31 · Milestone 3B: Library UI
+
+### Added
+
+- Library page with URL-driven views: all documents, per class, per folder,
+  favorites, archived, trash, and title search — every filter shareable and
+  refresh-safe.
+- Class management: create, rename, archive, delete, with per-class document
+  counts. Deleting a class detaches its documents rather than destroying them.
+- Folders with create, rename, and delete, scoped to a class or the library
+  root.
+- Tags: create, apply, remove, and delete from a picker on each document.
+- Move dialog for filing a document into a class and folder, with folder
+  options filtered to the chosen class.
+- Drag-and-drop upload with per-file progress and inline, dismissible errors.
+- Live processing status: documents show Queued → Reading → Ready without a
+  manual refresh, polled only while work is outstanding.
+- Document actions: rename, move, tag, favorite, archive, trash; restore and
+  delete-forever from the trash view.
+- Server Actions layer with a shared wrapper handling auth, revalidation, and
+  safe error translation.
+- `docs/library.md` covering the ownership model, deletion semantics, and
+  accessibility decisions.
+
+### Security
+
+- Every library query and mutation is scoped by `userId` in the data layer,
+  so a component cannot leak another user's data by omitting a check.
+- Cross-user access raises `NotFoundError` — existence is never confirmed to
+  a non-owner. The integration suite asserts this for every mutation.
+- `moveFolder` rejects moving a folder into itself or any descendant, which
+  would otherwise orphan the subtree.
+
+### Fixed
+
+- Page counts read "1 pages"; added a `pluralize` helper with tests.
+- Class and folder links announced as "Biology3" to screen readers — the
+  count ran into the name. They now carry explicit labels ("Biology, 3
+  documents") with the visible count hidden from assistive tech.
+- Replaced a state-syncing effect in the rename dialog and a render-phase ref
+  write in the status watcher with the idiomatic React patterns.
+- Added Pointer Capture and `scrollIntoView` polyfills to the test setup;
+  without them Radix Select and DropdownMenu never render content in jsdom.
+
+### Known limitations
+
+- Folders are one level deep in the UI; nesting is supported by the schema
+  and service layer (with cycle prevention) but has no navigation yet.
+- Search matches document titles only — content search arrives with
+  Milestone 4's embeddings.
+
 ## [0.3.0] — 2026-07-31 · Milestone 3A: Content pipeline
 
 ### Added
