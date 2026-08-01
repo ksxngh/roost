@@ -4,12 +4,14 @@
  */
 import {
   CalendarDays,
+  CalendarRange,
   FileText,
   LayoutDashboard,
   Receipt,
   Settings,
   Store,
   Users,
+  Wrench,
   type LucideIcon,
 } from "lucide-react";
 
@@ -50,6 +52,13 @@ export const businessNav: NavItem[] = [
     icon: CalendarDays,
     segment: "schedule",
   },
+  {
+    title: "Availability",
+    href: "/availability",
+    icon: CalendarRange,
+    segment: "availability",
+  },
+  { title: "Services", href: "/services", icon: Wrench, segment: "services" },
   { title: "Clients", href: "/clients", icon: Users, segment: "clients" },
   { title: "Quotes", href: "/quotes", icon: FileText, segment: "quotes" },
   { title: "Invoices", href: "/invoices", icon: Receipt, segment: "invoices" },

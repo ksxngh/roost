@@ -1,6 +1,6 @@
 # Architecture
 
-## Current state (after Milestone 2)
+## Current state (after Milestone 3)
 
 Roost is a single Next.js application backed by PostgreSQL, Redis, and an
 object store. The App Router serves three surfaces from one deployable: the
@@ -45,7 +45,8 @@ Two boundaries do the security work:
   requests reach, and every query in it filters `status: ACTIVE` and selects
   an explicit column list.
 
-See [storefront.md](storefront.md) for the provider lifecycle these enforce.
+See [storefront.md](storefront.md) for the provider lifecycle these enforce,
+and [scheduling.md](scheduling.md) for how bookable slots are produced.
 
 ## Target architecture
 
@@ -95,16 +96,17 @@ Key properties:
 `src/server/` holds framework-agnostic server code, kept out of route handlers
 so it stays testable and extractable ([ADR-0001](adr/0001-nextjs-fullstack.md)):
 
-| Module          | Responsibility                                              |
-| --------------- | ----------------------------------------------------------- |
-| `db.ts`         | Prisma singleton (globalThis-cached against dev HMR)        |
-| `auth.ts`       | Better Auth configuration: sessions, rate limits, providers |
-| `session.ts`    | `getSession` (request-cached) and the `requireSession` gate |
-| `mailer.ts`     | `Mailer` interface + console/Resend transports              |
-| `storage/`      | `Storage` interface + local/S3 drivers                      |
-| `businesses/`   | Access gates, business service, documents, public reads     |
-| `queue/`        | Redis connection and BullMQ queues                          |
-| `rate-limit.ts` | Redis fixed-window limiter for expensive endpoints          |
+| Module                       | Responsibility                                              |
+| ---------------------------- | ----------------------------------------------------------- |
+| `db.ts`                      | Prisma singleton (globalThis-cached against dev HMR)        |
+| `auth.ts`                    | Better Auth configuration: sessions, rate limits, providers |
+| `session.ts`                 | `getSession` (request-cached) and the `requireSession` gate |
+| `mailer.ts`                  | `Mailer` interface + console/Resend transports              |
+| `storage/`                   | `Storage` interface + local/S3 drivers                      |
+| `businesses/`                | Access gates, business service, documents, public reads     |
+| `businesses/availability.ts` | Pure slot generation + hours/closure persistence            |
+| `queue/`                     | Redis connection and BullMQ queues                          |
+| `rate-limit.ts`              | Redis fixed-window limiter for expensive endpoints          |
 
 Swappable dependencies are expressed as interfaces with a factory that picks
 the implementation from configuration (`createMailer`). The same pattern will
@@ -115,6 +117,8 @@ carry storage (S3/R2), the vector store, and AI providers.
 - `src/lib/env.ts` is the only place `process.env` is read on the server;
   everything else calls the validated `serverEnv()`.
 - `src/lib/site-config.ts` owns product identity and navigation.
+- `src/lib/time.ts` is the only place wall-clock ↔ instant conversion happens;
+  nothing else should do timezone arithmetic ([scheduling.md](scheduling.md)).
 - Route groups: `(app)` wraps everything behind the auth gate, which also
   redirects a user without a business to `/onboarding`.
 - Tests live next to the code they cover (`*.test.ts[x]`), with shared setup

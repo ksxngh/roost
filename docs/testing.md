@@ -51,7 +51,7 @@ project already pinned; the vector extension is unused for now) and
 `redis:8-alpine`
 service containers via `TEST_DATABASE_URL` and `REDIS_URL`.
 
-## Current suite (249 tests)
+## Current suite (449 tests)
 
 | Area                                                    | Coverage                                                                                                                                                                                                                                                                  |
 | ------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
@@ -91,3 +91,11 @@ surface stops moving weekly.
 - **Fixed windows and real clocks.** Any rate-limit test that assumes two
   calls share a window must pin `Date.now`, or it will fail whenever the calls
   straddle a boundary.
+- **Slot tests need an explicit `now`.** `generateSlots` filters anything
+  before `now + leadHours`, so a test using a fixed past date must pass a
+  `now` earlier than it — otherwise every assertion passes vacuously against
+  an empty list.
+- **Radix needs jsdom shims.** Pointer capture, `scrollIntoView`, and
+  `ResizeObserver` are all polyfilled in `src/test/setup.ts`; without them
+  Dialog and Select render nothing and fail in ways that do not name the
+  cause.

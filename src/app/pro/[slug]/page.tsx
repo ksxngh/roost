@@ -1,12 +1,24 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { BadgeCheck, Globe, Mail, MapPin, Phone } from "lucide-react";
+import { BadgeCheck, Clock, Globe, Mail, MapPin, Phone } from "lucide-react";
 
 import { Badge } from "@/components/ui/badge";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
 import { siteConfig } from "@/lib/site-config";
+import { WEEKDAY_NAMES, formatMinutes, wallTimeAt } from "@/lib/time";
+import { formatDuration, formatPrice } from "@/lib/validations/scheduling";
+import { publicAvailability } from "@/server/businesses/availability";
 import { getPublicStorefront } from "@/server/businesses/public";
+
+/** How many days of openings a storefront advertises. */
+const PREVIEW_DAYS = 7;
 
 type Params = { params: Promise<{ slug: string }> };
 
@@ -27,6 +39,26 @@ export default async function StorefrontPublicPage({ params }: Params) {
   // Non-ACTIVE businesses return null, so an unlisted storefront is a 404
   // rather than a page that leaks its existence.
   if (!business) notFound();
+
+  // Advertised against the first published service — enough to answer "can
+  // they come this week?" without turning the page into a booking flow.
+  const headline = business.packages.at(0);
+  const availability = headline
+    ? ((await publicAvailability(business.slug, headline.id, {
+        days: PREVIEW_DAYS,
+      })) ?? [])
+    : [];
+  const nextAvailable = availability
+    .filter((day) => day.slots.length > 0)
+    .map((day) => ({
+      date: day.date,
+      weekday: day.weekday,
+      times: day.slots
+        .slice(0, 6)
+        .map((slot) =>
+          formatMinutes(wallTimeAt(slot, business.timezone).minutes),
+        ),
+    }));
 
   const contacts = [
     business.phone && {
@@ -88,6 +120,82 @@ export default async function StorefrontPublicPage({ params }: Params) {
             <p className="text-sm leading-relaxed whitespace-pre-line">
               {business.about}
             </p>
+          </CardContent>
+        </Card>
+      ) : null}
+
+      {business.packages.length > 0 ? (
+        <Card>
+          <CardHeader>
+            <CardTitle className="text-base">Services &amp; prices</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <ul className="divide-border divide-y">
+              {business.packages.map((servicePackage) => (
+                <li
+                  key={servicePackage.id}
+                  className="flex flex-wrap items-baseline gap-x-3 gap-y-1 py-3 first:pt-0 last:pb-0"
+                >
+                  <div className="min-w-0 flex-1">
+                    <p className="font-medium">{servicePackage.name}</p>
+                    {servicePackage.description ? (
+                      <p className="text-muted-foreground text-sm">
+                        {servicePackage.description}
+                      </p>
+                    ) : null}
+                    <p className="text-muted-foreground flex items-center gap-1.5 text-xs">
+                      <Clock className="size-3.5" aria-hidden />
+                      {formatDuration(servicePackage.durationMinutes)}
+                    </p>
+                  </div>
+                  <p className="font-medium whitespace-nowrap">
+                    {servicePackage.pricingModel === "QUOTE"
+                      ? "Quoted on site"
+                      : `${formatPrice(servicePackage.priceCents ?? 0)}${
+                          servicePackage.pricingModel === "HOURLY"
+                            ? " / hr"
+                            : ""
+                        }`}
+                  </p>
+                </li>
+              ))}
+            </ul>
+          </CardContent>
+        </Card>
+      ) : null}
+
+      {nextAvailable.length > 0 ? (
+        <Card>
+          <CardHeader>
+            <CardTitle className="text-base">Next available</CardTitle>
+            <CardDescription>
+              Times shown in {business.timezone.replace(/_/g, " ")}. Booking
+              opens with payments.
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <ul className="space-y-3">
+              {nextAvailable.map((day) => (
+                <li key={day.date}>
+                  <p className="text-sm font-medium">
+                    {WEEKDAY_NAMES[day.weekday]}{" "}
+                    <span className="text-muted-foreground font-normal">
+                      {day.date}
+                    </span>
+                  </p>
+                  <ul className="mt-1 flex flex-wrap gap-1.5">
+                    {day.times.map((time) => (
+                      <li
+                        key={time}
+                        className="bg-secondary text-secondary-foreground rounded px-2 py-0.5 text-xs"
+                      >
+                        {time}
+                      </li>
+                    ))}
+                  </ul>
+                </li>
+              ))}
+            </ul>
           </CardContent>
         </Card>
       ) : null}

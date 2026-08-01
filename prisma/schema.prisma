@@ -126,10 +126,21 @@ model Business {
   /// Expiry of the insurance certificate on file; drives re-verification.
   insuredUntil DateTime?
 
-  members      BusinessMember[]
-  categories   BusinessCategory[]
-  serviceAreas ServiceArea[]
-  documents    BusinessDocument[]
+  /// IANA zone. Opening hours are wall-clock times in this zone, so every
+  /// instant shown to a customer is derived from it.
+  timezone           String @default("America/Vancouver")
+  /// How much notice the business needs before a job starts.
+  bookingLeadHours   Int    @default(24)
+  /// How far ahead customers may book.
+  bookingHorizonDays Int    @default(30)
+
+  members                BusinessMember[]
+  categories             BusinessCategory[]
+  serviceAreas           ServiceArea[]
+  documents              BusinessDocument[]
+  packages               ServicePackage[]
+  hours                  BusinessHour[]
+  availabilityExceptions AvailabilityException[]
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -166,7 +177,8 @@ model ServiceCategory {
   /// Ordering on the browse page; lower sorts first.
   position    Int     @default(0)
 
-  businesses BusinessCategory[]
+  businesses      BusinessCategory[]
+  servicePackages ServicePackage[]
 
   @@map("service_category")
 }
@@ -243,4 +255,77 @@ model BusinessDocument {
   @@index([businessId, kind])
   @@index([status])
   @@map("business_document")
+}
+
+enum PricingModel {
+  /// One upfront price for the whole job — the marketplace default.
+  FIXED
+  /// Priced per hour; `priceCents` is the hourly rate.
+  HOURLY
+  /// Needs a site visit before a number can be given.
+  QUOTE
+}
+
+/// Something a customer can actually book: a named service with a price and
+/// a duration. Duration is what makes a calendar slot, so it is required even
+/// for quote-priced work.
+model ServicePackage {
+  id          String           @id @default(cuid())
+  businessId  String
+  business    Business         @relation(fields: [businessId], references: [id], onDelete: Cascade)
+  name        String
+  description String?
+  /// Optional link to the trade taxonomy, for marketplace filtering.
+  categoryId  String?
+  category    ServiceCategory? @relation(fields: [categoryId], references: [id], onDelete: SetNull)
+
+  pricingModel    PricingModel @default(FIXED)
+  /// Null only when `pricingModel` is QUOTE. Integer cents — never a float.
+  priceCents      Int?
+  /// Minutes of work; drives slot length.
+  durationMinutes Int
+  /// Travel or clean-up time reserved after the job, not shown as bookable.
+  bufferMinutes   Int          @default(0)
+
+  active   Boolean @default(true)
+  position Int     @default(0)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([businessId, active])
+  @@map("service_package")
+}
+
+/// One opening window on one weekday. A day may have several rows, which is
+/// how split shifts (08:00–12:00, 13:00–17:00) are represented.
+model BusinessHour {
+  id          String   @id @default(cuid())
+  businessId  String
+  business    Business @relation(fields: [businessId], references: [id], onDelete: Cascade)
+  /// 0 = Sunday … 6 = Saturday, matching `Date.prototype.getDay`.
+  weekday     Int
+  /// Minutes from midnight, wall-clock in the business's timezone.
+  startMinute Int
+  endMinute   Int
+
+  @@unique([businessId, weekday, startMinute])
+  @@index([businessId])
+  @@map("business_hour")
+}
+
+/// A day the business is closed regardless of its weekly hours — holidays,
+/// vacation, a booked-out day.
+model AvailabilityException {
+  id         String   @id @default(cuid())
+  businessId String
+  business   Business @relation(fields: [businessId], references: [id], onDelete: Cascade)
+  /// Calendar date in the business's timezone, stored without a time part.
+  date       DateTime @db.Date
+  note       String?
+
+  createdAt DateTime @default(now())
+
+  @@unique([businessId, date])
+  @@map("availability_exception")
 }

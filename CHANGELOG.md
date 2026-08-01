@@ -4,6 +4,45 @@ All notable changes are documented here. Format follows
 [Keep a Changelog](https://keepachangelog.com/); versions follow semver
 (pre-1.0: minor = milestone).
 
+## [0.7.0] — 2026-08-01 · Milestone 3: Services & availability
+
+Providers can now publish priced services and the hours they work, and the
+marketplace shows real bookable times instead of a phone number.
+
+### Added
+
+- **Service packages** (`/services`): name, description, duration, optional
+  buffer, and `FIXED` / `HOURLY` / `QUOTE` pricing. Money is stored as integer
+  cents; the form edits dollars and rounds at the boundary.
+- **Weekly hours, days off, and booking rules** (`/availability`): per-day
+  opening windows, whole-day closures, business timezone, notice required, and
+  how far ahead customers may book.
+- **Slot generation** (`generateSlots`): a pure, database-free function that
+  turns hours into concrete bookable instants, honouring closures, buffers,
+  notice periods, and daylight-saving transitions.
+- **`src/lib/time.ts`**: wall-clock ↔ instant conversion for a named IANA
+  zone, built on `Intl.DateTimeFormat` with no new dependency. Handles the
+  hour spring-forward erases and the hour fall-back repeats.
+- **Public storefronts** now list services with prices and the next seven days
+  of real openings, keyed by slug so no internal id is exposed.
+- 200 new tests, including exhaustive daylight-saving coverage.
+
+### Changed
+
+- The storefront readiness checklist gained `packages` and `hours` checks, so
+  a business can no longer be submitted for review with nothing bookable.
+  `submitForReview` now requires seven checks rather than five.
+
+### Removed
+
+- `mammoth`, `jszip`, `tesseract.js`, and `@aws-sdk/s3-request-presigner` —
+  dead since the Milestone 1 pivot removed the document-parsing pipeline.
+
+### Documentation
+
+- New [services & availability](docs/scheduling.md) guide covering the
+  timezone model and the slot rules.
+
 ## [0.6.0] — 2026-08-01 · Milestone 2: Provider onboarding & storefront
 
 A provider can now sign up, create their business, describe it, say where they

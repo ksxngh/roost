@@ -26,6 +26,7 @@ export async function getPublicStorefront(slug: string) {
     select: {
       slug: true,
       name: true,
+      timezone: true,
       tagline: true,
       about: true,
       phone: true,
@@ -39,6 +40,20 @@ export async function getPublicStorefront(slug: string) {
       serviceAreas: {
         select: { city: true, region: true },
         orderBy: [{ region: "asc" }, { city: "asc" }],
+      },
+      // Hidden packages are excluded here, not filtered in the page, so an
+      // unpublished service cannot leak through a new caller.
+      packages: {
+        where: { active: true },
+        select: {
+          id: true,
+          name: true,
+          description: true,
+          pricingModel: true,
+          priceCents: true,
+          durationMinutes: true,
+        },
+        orderBy: [{ position: "asc" }, { createdAt: "asc" }],
       },
     },
   });

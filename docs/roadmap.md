@@ -10,8 +10,8 @@ begins.
 | --- | -------------------------------- | ----------------------------------------------------------------------------- | ------- |
 | 1   | Pivot & core domain              | Businesses, team seats, trades, service areas; rebrand; provider shell        | ✅ Done |
 | 2   | Provider onboarding & storefront | Business profile, coverage areas, licence/insurance upload, public storefront | ✅ Done |
-| 3   | Service packages & availability  | Fixed-price packages, business hours, real bookable slots                     | Next    |
-| 4   | Marketplace & booking            | City/category search, listings, slot selection, booking creation              |         |
+| 3   | Service packages & availability  | Fixed-price packages, business hours, real bookable slots                     | ✅ Done |
+| 4   | Marketplace & booking            | City/category search, listings, slot selection, booking creation              | Next    |
 | 5   | Payments                         | Stripe Connect onboarding, checkout, platform fee, payouts                    |         |
 | 6   | Jobs & scheduling ops            | Job lifecycle, double-booking prevention, calendar                            |         |
 | 7   | Quotes & invoicing               | Estimate → approval → scheduled job → invoice                                 |         |
@@ -52,6 +52,13 @@ Deliberately deferred, tracked so it doesn't get lost:
   (Milestone 9).
 - **Document expiry** — `expiresAt` is stored but nothing acts on it. Expiry
   reminders and auto-suspension need the worker (Milestone 5).
+- **Booked time does not reduce availability** — slots come from hours minus
+  closures. Once jobs exist (Milestone 6), a booked slot must disappear from
+  the offered set; `generateSlots` takes the closed-day set that will carry
+  it.
+- **Split shifts have no editor** — the schema and slot generator support
+  several windows per day, but the hours form edits one open/close pair and
+  flattens anything else on save.
 
 ## Local environment
 

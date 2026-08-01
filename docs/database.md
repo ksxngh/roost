@@ -18,7 +18,11 @@ erDiagram
     business ||--o{ business_category : offers
     business ||--o{ service_area : serves
     business ||--o{ business_document : "proves with"
+    business ||--o{ service_package : sells
+    business ||--o{ business_hour : "opens during"
+    business ||--o{ availability_exception : "closes on"
     service_category ||--o{ business_category : "offered via"
+    service_category ||--o{ service_package : classifies
 
     business {
         string id PK
@@ -33,6 +37,35 @@ erDiagram
         enum status "DRAFT PENDING_REVIEW ACTIVE SUSPENDED"
         datetime verifiedAt
         datetime insuredUntil
+        string timezone "IANA; what wall-clock hours mean"
+        int bookingLeadHours
+        int bookingHorizonDays
+    }
+    service_package {
+        string id PK
+        string businessId FK
+        string name
+        string description
+        string categoryId FK "nullable, SetNull"
+        enum pricingModel "FIXED HOURLY QUOTE"
+        int priceCents "integer cents; null only when QUOTE"
+        int durationMinutes "slot length"
+        int bufferMinutes "reserved after the job"
+        boolean active
+        int position
+    }
+    business_hour {
+        string id PK
+        string businessId FK
+        int weekday "0 = Sunday"
+        int startMinute "from midnight, business-local"
+        int endMinute
+    }
+    availability_exception {
+        string id PK
+        string businessId FK
+        date date "whole-day closure"
+        string note
     }
     business_member {
         string id PK
@@ -80,9 +113,12 @@ business cascades to its seats, trades, areas, and documents; deleting a user
 removes their seats but leaves the business standing, so a departing team
 member cannot take the company with them.
 
-`(businessId, userId)` on `business_member` and `(businessId, city, region,
-country)` on `service_area` are unique, which is what makes re-adding the same
-city an idempotent no-op instead of an error. `service_area` is additionally
+`(businessId, userId)` on `business_member`, `(businessId, city, region,
+country)` on `service_area`, and `(businessId, date)` on
+`availability_exception` are unique, which is what makes re-adding the same
+city or closed day an idempotent no-op instead of an error.
+`(businessId, weekday, startMinute)` is unique on `business_hour` so a day
+cannot hold two windows that open at the same minute. `service_area` is additionally
 indexed on `(city, region, country)` — that index serves marketplace search.
 
 ### Authentication tables

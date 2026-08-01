@@ -9,6 +9,25 @@ import {
   updateBusinessProfileSchema,
 } from "@/lib/validations/business";
 import {
+  availabilityExceptionSchema,
+  bookingSettingsSchema,
+  businessHoursSchema,
+  servicePackageSchema,
+} from "@/lib/validations/scheduling";
+import {
+  addException,
+  removeException,
+  setWeeklyHours,
+  updateBookingSettings,
+} from "@/server/businesses/availability";
+import {
+  TooManyPackagesError,
+  createPackage,
+  deletePackage,
+  reorderPackages,
+  updatePackage,
+} from "@/server/businesses/packages";
+import {
   DuplicateSlugError,
   ForbiddenError,
   NotFoundError,
@@ -54,6 +73,8 @@ async function mutation<T>(
       businessId: membership.businessId,
     });
     revalidatePath("/storefront");
+    revalidatePath("/services");
+    revalidatePath("/availability");
     revalidatePath("/dashboard");
     return { ok: true, data } as ActionResult<T>;
   } catch (error) {
@@ -61,7 +82,8 @@ async function mutation<T>(
       error instanceof NotFoundError ||
       error instanceof ForbiddenError ||
       error instanceof DuplicateSlugError ||
-      error instanceof NotReadyError
+      error instanceof NotReadyError ||
+      error instanceof TooManyPackagesError
     ) {
       return { ok: false, error: error.message };
     }
@@ -152,5 +174,66 @@ export async function deleteDocumentAction(documentId: string) {
 export async function submitForReviewAction() {
   return mutation(({ userId, businessId }) =>
     submitForReview(userId, businessId),
+  );
+}
+
+// ── Services and availability ────────────────────────────────────────────
+
+export async function createPackageAction(input: unknown) {
+  const parsed = servicePackageSchema.safeParse(input);
+  if (!parsed.success) return invalid(parsed.error.issues[0]!.message);
+  return mutation(async ({ userId, businessId }) => {
+    const created = await createPackage(userId, businessId, parsed.data);
+    return { id: created.id };
+  });
+}
+
+export async function updatePackageAction(packageId: string, input: unknown) {
+  const parsed = servicePackageSchema.safeParse(input);
+  if (!parsed.success) return invalid(parsed.error.issues[0]!.message);
+  return mutation(({ userId, businessId }) =>
+    updatePackage(userId, businessId, packageId, parsed.data),
+  );
+}
+
+export async function deletePackageAction(packageId: string) {
+  return mutation(({ userId, businessId }) =>
+    deletePackage(userId, businessId, packageId),
+  );
+}
+
+export async function reorderPackagesAction(orderedIds: string[]) {
+  return mutation(({ userId, businessId }) =>
+    reorderPackages(userId, businessId, orderedIds),
+  );
+}
+
+export async function setWeeklyHoursAction(input: unknown) {
+  const parsed = businessHoursSchema.safeParse(input);
+  if (!parsed.success) return invalid(parsed.error.issues[0]!.message);
+  return mutation(({ userId, businessId }) =>
+    setWeeklyHours(userId, businessId, parsed.data),
+  );
+}
+
+export async function addExceptionAction(input: unknown) {
+  const parsed = availabilityExceptionSchema.safeParse(input);
+  if (!parsed.success) return invalid(parsed.error.issues[0]!.message);
+  return mutation(({ userId, businessId }) =>
+    addException(userId, businessId, parsed.data),
+  );
+}
+
+export async function removeExceptionAction(exceptionId: string) {
+  return mutation(({ userId, businessId }) =>
+    removeException(userId, businessId, exceptionId),
+  );
+}
+
+export async function updateBookingSettingsAction(input: unknown) {
+  const parsed = bookingSettingsSchema.safeParse(input);
+  if (!parsed.success) return invalid(parsed.error.issues[0]!.message);
+  return mutation(({ userId, businessId }) =>
+    updateBookingSettings(userId, businessId, parsed.data),
   );
 }

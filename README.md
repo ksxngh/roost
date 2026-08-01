@@ -5,9 +5,9 @@ run their business with. Homeowners find a licensed, insured pro and book
 them; the pro gets scheduling, quotes, invoicing, and a client list in the
 same account.
 
-> **Status:** Milestone 2 complete — provider onboarding, storefront
-> management, licence/insurance verification, and the public marketplace
-> pages. Milestone 3 adds service packages and availability. See
+> **Status:** Milestone 3 complete — providers can publish priced services,
+> set the hours they work, and the marketplace shows real bookable times.
+> Milestone 4 adds the booking flow itself. See
 > [docs/roadmap.md](docs/roadmap.md).
 
 ## Stack
@@ -70,7 +70,7 @@ promote one locally.
 prisma/           # Schema, migrations, seed
 src/
   app/            # App Router routes
-    (app)/        # Session-protected provider app (dashboard, storefront, …)
+    (app)/        # Session-protected provider app (dashboard, services, …)
     (auth)/       # Login, signup, password reset
     api/auth/     # Better Auth HTTP handler
     api/documents/# Verification-document upload and download
@@ -80,13 +80,15 @@ src/
     page.tsx      # Marketing landing page
   components/
     auth/         # Auth forms and fields
+    availability/ # Weekly hours, closures, booking rules, slot preview
+    services/     # Service package editor
     onboarding/   # Business creation form
     shell/        # App frame (sidebar, topbar, user menu)
     storefront/   # Profile, service areas, documents, submit for review
     ui/           # shadcn/ui primitives (generated, not hand-edited)
   lib/            # Config, env validation, validation schemas, utilities
   server/         # Framework-agnostic server code
-    businesses/   # Access control, business service, documents, public reads
+    businesses/   # Access, business service, packages, availability, documents
     queue/        # Redis connection and BullMQ queues
     storage/      # Storage interface + local/S3 drivers
   test/           # Test setup and global setup
@@ -99,6 +101,7 @@ docs/             # Architecture, ADRs, roadmap, auth, database, storefront, tes
 - [Authentication](docs/auth.md)
 - [Database](docs/database.md)
 - [Providers & storefronts](docs/storefront.md)
+- [Services & availability](docs/scheduling.md)
 - [Roadmap](docs/roadmap.md)
 - [Testing](docs/testing.md)
 - [Decision records](docs/adr/)

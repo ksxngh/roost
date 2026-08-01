@@ -19,6 +19,14 @@ if (typeof window !== "undefined") {
   Element.prototype.releasePointerCapture ??= () => {};
   Element.prototype.scrollIntoView ??= () => {};
 
+  // Radix Dialog and Select observe their content to position it. jsdom has
+  // no layout, so a no-op observer is both sufficient and honest.
+  globalThis.ResizeObserver ??= class {
+    observe() {}
+    unobserve() {}
+    disconnect() {}
+  };
+
   Object.defineProperty(window, "matchMedia", {
     writable: true,
     value: vi.fn().mockImplementation((query: string) => ({

@@ -96,6 +96,8 @@ export async function getBusiness(userId: string, businessId: string) {
     include: {
       categories: { include: { category: true } },
       serviceAreas: { orderBy: [{ region: "asc" }, { city: "asc" }] },
+      packages: { orderBy: [{ position: "asc" }, { createdAt: "asc" }] },
+      hours: { orderBy: [{ weekday: "asc" }, { startMinute: "asc" }] },
       members: {
         include: { user: { select: { id: true, name: true, email: true } } },
         orderBy: { createdAt: "asc" },
@@ -226,6 +228,17 @@ export async function storefrontReadiness(
       key: "areas",
       label: "Set the areas you serve",
       done: business.serviceAreas.length > 0,
+    },
+    {
+      key: "packages",
+      // Being listed with nothing bookable wastes the customer's click.
+      label: "Publish at least one bookable service",
+      done: business.packages.some((servicePackage) => servicePackage.active),
+    },
+    {
+      key: "hours",
+      label: "Set the hours you work",
+      done: business.hours.length > 0,
     },
     {
       key: "licence",

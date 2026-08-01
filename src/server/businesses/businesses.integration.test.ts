@@ -78,6 +78,23 @@ async function makeReady(businessId: string, uploadedById: string) {
     where: { id: businessId },
     data: { about: "We fix pipes.", phone: "604-555-0142" },
   });
+  await prisma.servicePackage.create({
+    data: {
+      businessId,
+      name: "Drain unclogging",
+      pricingModel: "FIXED",
+      priceCents: 12_000,
+      durationMinutes: 60,
+    },
+  });
+  await prisma.businessHour.createMany({
+    data: [1, 2, 3, 4, 5].map((weekday) => ({
+      businessId,
+      weekday,
+      startMinute: 9 * 60,
+      endMinute: 17 * 60,
+    })),
+  });
   await prisma.businessDocument.createMany({
     data: (["LICENCE", "INSURANCE"] as const).map((kind, index) => ({
       businessId,
@@ -438,6 +455,8 @@ describe("storefrontReadiness and submitForReview", () => {
       "profile",
       "categories",
       "areas",
+      "packages",
+      "hours",
       "licence",
       "insurance",
     ]);
@@ -466,7 +485,8 @@ describe("storefrontReadiness and submitForReview", () => {
     );
 
     expect(error).toBeInstanceOf(NotReadyError);
-    expect((error as NotReadyError).missing).toHaveLength(3);
+    // profile, packages, hours, licence, insurance
+    expect((error as NotReadyError).missing).toHaveLength(5);
   });
 
   it("moves a ready business to PENDING_REVIEW, never straight to ACTIVE", async () => {
