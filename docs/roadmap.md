@@ -9,8 +9,8 @@ begins.
 | #   | Milestone                        | Scope                                                                         | Status  |
 | --- | -------------------------------- | ----------------------------------------------------------------------------- | ------- |
 | 1   | Pivot & core domain              | Businesses, team seats, trades, service areas; rebrand; provider shell        | ✅ Done |
-| 2   | Provider onboarding & storefront | Business profile, coverage areas, licence/insurance upload, public storefront | Next    |
-| 3   | Service packages & availability  | Fixed-price packages, business hours, real bookable slots                     |         |
+| 2   | Provider onboarding & storefront | Business profile, coverage areas, licence/insurance upload, public storefront | ✅ Done |
+| 3   | Service packages & availability  | Fixed-price packages, business hours, real bookable slots                     | Next    |
 | 4   | Marketplace & booking            | City/category search, listings, slot selection, booking creation              |         |
 | 5   | Payments                         | Stripe Connect onboarding, checkout, platform fee, payouts                    |         |
 | 6   | Jobs & scheduling ops            | Job lifecycle, double-booking prevention, calendar                            |         |
@@ -44,6 +44,14 @@ Deliberately deferred, tracked so it doesn't get lost:
   the worker entry point was removed with the document pipeline. It returns
   in Milestone 5 for payout and notification jobs.
 - **Storage purge job** — soft-deleted records keep their stored objects.
+- **Verification review** — `submitForReview` sets `PENDING_REVIEW`; nothing
+  can set `ACTIVE` yet. The admin queue that approves, rejects, and suspends
+  businesses lands in Milestone 11; until then status changes are manual.
+- **Business switcher** — `currentMembership` returns the oldest membership.
+  A user belonging to several businesses needs an explicit switcher
+  (Milestone 9).
+- **Document expiry** — `expiresAt` is stored but nothing acts on it. Expiry
+  reminders and auto-suspension need the worker (Milestone 5).
 
 ## Local environment
 

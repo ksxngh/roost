@@ -2,28 +2,50 @@
 
 ## Current state (after Milestone 2)
 
-StudyForge is a single Next.js application backed by PostgreSQL. The App
-Router serves the marketing site, the auth pages, and the session-protected
-app shell.
+Roost is a single Next.js application backed by PostgreSQL, Redis, and an
+object store. The App Router serves three surfaces from one deployable: the
+public marketplace, the auth pages, and the session-protected provider app.
 
 ```mermaid
 flowchart LR
     U[Browser]
     subgraph "Next.js"
-        M["Marketing + auth pages\n(/, /login, /signup)"]
-        A["Protected app\n(app) route group"]
-        H["/api/auth/[...all]\nBetter Auth handler"]
+        P["Public\n/, /browse, /pro/[slug]"]
+        A["Provider app\n(app) route group"]
+        O["/onboarding"]
+        H["/api/auth/[...all]"]
+        D["/api/documents"]
     end
-    DB[("PostgreSQL\nuser · session · account")]
+    DB[("PostgreSQL")]
+    R[("Redis\nrate limits")]
+    S3[("Storage\nlocal | S3")]
     MAIL["Mailer\nconsole | Resend"]
 
-    U --> M
+    U --> P
     U --> A
+    U --> O
     U --> H
-    A -->|requireSession| DB
+    U --> D
+    P -->|status = ACTIVE only| DB
+    A -->|requireSession + membership| DB
+    O --> DB
     H --> DB
     H --> MAIL
+    D --> R
+    D --> DB
+    D --> S3
 ```
+
+Two boundaries do the security work:
+
+- **`requireSession` → `currentMembership` → `requireMembership`/`requireEditor`.**
+  Authentication says who you are; membership says which business you may act
+  for. No service function trusts a `businessId` from a request body.
+- **`src/server/businesses/public.ts`** is the only module unauthenticated
+  requests reach, and every query in it filters `status: ACTIVE` and selects
+  an explicit column list.
+
+See [storefront.md](storefront.md) for the provider lifecycle these enforce.
 
 ## Target architecture
 
@@ -33,28 +55,29 @@ The end-state the milestones build toward:
 flowchart TB
     U[Browser] -->|HTTPS| FE["Next.js app\nRSC + route handlers"]
     FE --> AUTH["Better Auth\nsessions, OAuth"]
-    FE --> DB[("PostgreSQL\n+ pgvector")]
+    FE --> DB[("PostgreSQL")]
     FE --> REDIS[("Redis\ncache + rate limits")]
-    FE --> S3[("S3 / R2\nuploads")]
+    FE --> S3[("S3 / R2\ndocuments, photos")]
     FE -->|enqueue| Q["BullMQ queues"]
     W["Worker processes"] --> Q
     W --> DB
     W --> S3
-    W --> AI["OpenAI / Anthropic\ngeneration + embeddings"]
-    FE -->|streaming| AI
-    STRIPE["Stripe"] -->|webhooks| FE
+    W --> MAIL["Email / SMS\nreminders, receipts"]
+    FE --> STRIPE["Stripe Connect\ncheckout + payouts"]
+    STRIPE -->|webhooks| FE
 ```
 
 Key properties:
 
-- **One web deployable.** All request/response work lives in Next.js. Heavy or
-  slow work (document parsing, OCR, embedding, batch generation) is enqueued to
-  BullMQ and executed by separate worker processes that share the same
-  codebase and Prisma client.
-- **Postgres is the source of truth** for relational data _and_ vectors
-  (pgvector). Redis is disposable: cache, queues, rate-limit counters.
-- **AI calls stream** from route handlers to the client; workers handle
-  anything that outlives a request.
+- **One web deployable.** All request/response work lives in Next.js. Anything
+  that outlives a request — booking reminders, invoice emails, payout
+  reconciliation, document-expiry checks — is enqueued to BullMQ and executed
+  by separate worker processes sharing the same codebase and Prisma client.
+- **Postgres is the source of truth.** Redis is disposable: cache, queues,
+  rate-limit counters.
+- **Money moves through Stripe Connect**, never through our own ledger:
+  customers pay the platform, the platform pays out to the provider's
+  connected account, and webhooks are the authority on what settled.
 
 ## Design system
 
@@ -79,8 +102,7 @@ so it stays testable and extractable ([ADR-0001](adr/0001-nextjs-fullstack.md)):
 | `session.ts`    | `getSession` (request-cached) and the `requireSession` gate |
 | `mailer.ts`     | `Mailer` interface + console/Resend transports              |
 | `storage/`      | `Storage` interface + local/S3 drivers                      |
-| `documents/`    | Upload validation, upload service, processing               |
-| `parsing/`      | Per-format text extraction (PDF, DOCX, PPTX, text, OCR)     |
+| `businesses/`   | Access gates, business service, documents, public reads     |
 | `queue/`        | Redis connection and BullMQ queues                          |
 | `rate-limit.ts` | Redis fixed-window limiter for expensive endpoints          |
 
@@ -93,6 +115,7 @@ carry storage (S3/R2), the vector store, and AI providers.
 - `src/lib/env.ts` is the only place `process.env` is read on the server;
   everything else calls the validated `serverEnv()`.
 - `src/lib/site-config.ts` owns product identity and navigation.
-- Route groups: `(app)` wraps everything behind the (future) auth gate.
+- Route groups: `(app)` wraps everything behind the auth gate, which also
+  redirects a user without a business to `/onboarding`.
 - Tests live next to the code they cover (`*.test.ts[x]`), with shared setup
   in `src/test/setup.ts`.

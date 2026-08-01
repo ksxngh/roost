@@ -1,9 +1,13 @@
-# StudyForge
+# Roost
 
-An AI-powered study platform: upload lecture notes, PDFs, and slides, and StudyForge turns them into flashcards, quizzes, summaries, and an AI tutor that answers only from your material.
+A home-services marketplace and the operations software the providers on it
+run their business with. Homeowners find a licensed, insured pro and book
+them; the pro gets scheduling, quotes, invoicing, and a client list in the
+same account.
 
-> **Status:** Milestone 1 complete — core domain, auth, and the provider shell.
-> Milestone 2 adds provider onboarding and public storefronts. See
+> **Status:** Milestone 2 complete — provider onboarding, storefront
+> management, licence/insurance verification, and the public marketplace
+> pages. Milestone 3 adds service packages and availability. See
 > [docs/roadmap.md](docs/roadmap.md).
 
 ## Stack
@@ -12,18 +16,19 @@ An AI-powered study platform: upload lecture notes, PDFs, and slides, and StudyF
 | --------- | ------------------------------------------------ | ---------------------------------------------------------------------------------------- |
 | Framework | Next.js (App Router) + React + strict TypeScript | One deployable, RSC, native streaming; see [ADR-0001](docs/adr/0001-nextjs-fullstack.md) |
 | Styling   | Tailwind CSS v4 + shadcn/ui                      | Token-driven theming, owned components                                                   |
-| Testing   | Vitest + Testing Library                         | Fast, jsdom component + unit tests                                                       |
+| Testing   | Vitest + Testing Library                         | Fast jsdom component tests, node integration tests against a real database               |
 | Auth      | Better Auth                                      | See [ADR-0002](docs/adr/0002-better-auth.md)                                             |
-| Database  | PostgreSQL 18 + Prisma 7 (+ pgvector, M4)        | See [ADR-0003](docs/adr/0003-pgvector.md)                                                |
+| Database  | PostgreSQL 18 + Prisma 7                         | See [ADR-0003](docs/adr/0003-pgvector.md)                                                |
+| Storage   | Local filesystem or S3-compatible                | Same interface both ways; no cloud account needed in development                         |
 
 ## Getting started
 
-Requires Node 24, PostgreSQL 18 with pgvector, and Redis.
+Requires Node 24, PostgreSQL 18, and Redis.
 
 ```bash
-brew install pgvector postgresql@18 redis
+brew install postgresql@18 redis
 brew services start postgresql@18 && brew services start redis
-createdb studyforge && createdb studyforge_test
+createdb roost && createdb roost_test
 ```
 
 ```bash
@@ -37,6 +42,12 @@ npm run dev                      # http://localhost:3000
 
 Sign up at `/signup`. With no email provider configured, the verification
 link prints to the server log — copy it from the terminal.
+
+A new account is redirected to `/onboarding` to create its business, then to
+`/storefront`. Storefronts start in `DRAFT` and only become publicly visible
+once an admin marks them `ACTIVE` — see
+[docs/storefront.md](docs/storefront.md) for the full lifecycle and how to
+promote one locally.
 
 ## Scripts
 
@@ -56,23 +67,30 @@ link prints to the server log — copy it from the terminal.
 ## Project layout
 
 ```
-prisma/           # Schema + migrations
+prisma/           # Schema, migrations, seed
 src/
   app/            # App Router routes
-    (app)/        # Session-protected provider app (dashboard, schedule, …)
+    (app)/        # Session-protected provider app (dashboard, storefront, …)
     (auth)/       # Login, signup, password reset
     api/auth/     # Better Auth HTTP handler
+    api/documents/# Verification-document upload and download
+    browse/       # Public marketplace search
+    pro/[slug]/   # Public storefront
+    onboarding/   # Business creation
     page.tsx      # Marketing landing page
   components/
     auth/         # Auth forms and fields
+    onboarding/   # Business creation form
     shell/        # App frame (sidebar, topbar, user menu)
+    storefront/   # Profile, service areas, documents, submit for review
     ui/           # shadcn/ui primitives (generated, not hand-edited)
   lib/            # Config, env validation, validation schemas, utilities
   server/         # Framework-agnostic server code
+    businesses/   # Access control, business service, documents, public reads
     queue/        # Redis connection and BullMQ queues
     storage/      # Storage interface + local/S3 drivers
   test/           # Test setup and global setup
-docs/             # Architecture, ADRs, roadmap, auth, database, testing
+docs/             # Architecture, ADRs, roadmap, auth, database, storefront, testing
 ```
 
 ## Documentation
@@ -80,6 +98,7 @@ docs/             # Architecture, ADRs, roadmap, auth, database, testing
 - [Architecture](docs/architecture.md)
 - [Authentication](docs/auth.md)
 - [Database](docs/database.md)
+- [Providers & storefronts](docs/storefront.md)
 - [Roadmap](docs/roadmap.md)
 - [Testing](docs/testing.md)
 - [Decision records](docs/adr/)

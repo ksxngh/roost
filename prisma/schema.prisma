@@ -129,6 +129,7 @@ model Business {
   members      BusinessMember[]
   categories   BusinessCategory[]
   serviceAreas ServiceArea[]
+  documents    BusinessDocument[]
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -198,4 +199,48 @@ model ServiceArea {
   @@unique([businessId, city, region, country])
   @@index([city, region, country])
   @@map("service_area")
+}
+
+enum BusinessDocumentKind {
+  /// Trade licence or business registration.
+  LICENCE
+  /// Certificate of liability insurance.
+  INSURANCE
+  /// Anything else an admin asked for.
+  OTHER
+}
+
+enum VerificationStatus {
+  PENDING
+  APPROVED
+  REJECTED
+}
+
+/// A credential a business uploads to be verified. Never publicly readable —
+/// only the business and platform admins can fetch the underlying object.
+model BusinessDocument {
+  id         String               @id @default(cuid())
+  businessId String
+  business   Business             @relation(fields: [businessId], references: [id], onDelete: Cascade)
+  kind       BusinessDocumentKind
+  /// Original filename, sanitized — display only, never a path.
+  title      String
+  storageKey String               @unique
+  mimeType   String
+  sizeBytes  Int
+
+  status     VerificationStatus @default(PENDING)
+  /// Admin-facing reason shown to the business when rejected.
+  reviewNote String?
+  reviewedAt DateTime?
+  /// Expiry printed on the certificate, when applicable.
+  expiresAt  DateTime?
+
+  uploadedById String?
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  @@index([businessId, kind])
+  @@index([status])
+  @@map("business_document")
 }

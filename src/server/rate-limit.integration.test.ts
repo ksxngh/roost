@@ -1,6 +1,14 @@
 // @vitest-environment node
 import { Redis } from "ioredis";
-import { afterAll, beforeAll, describe, expect, it } from "vitest";
+import {
+  afterAll,
+  afterEach,
+  beforeAll,
+  describe,
+  expect,
+  it,
+  vi,
+} from "vitest";
 
 import { checkRateLimit } from "@/server/rate-limit";
 
@@ -19,6 +27,27 @@ afterAll(() => {
 function uniqueKey(): string {
   return `test-${Date.now()}-${Math.random().toString(36).slice(2)}`;
 }
+
+/**
+ * Pin the clock the limiter reads.
+ *
+ * The window index is `floor(now / windowSeconds)`, so any test that assumes
+ * two calls share a window is racing a real boundary — rarely, but it does
+ * happen. Only `Date.now` is stubbed: ioredis needs real timers for its I/O.
+ */
+function pinClock(millis: number) {
+  const now = vi.spyOn(Date, "now").mockReturnValue(millis);
+  return {
+    advance(byMillis: number) {
+      millis += byMillis;
+      now.mockReturnValue(millis);
+    },
+  };
+}
+
+afterEach(() => {
+  vi.restoreAllMocks();
+});
 
 describe("checkRateLimit", () => {
   it("allows requests up to the limit and blocks the next one", async () => {
@@ -95,8 +124,10 @@ describe("checkRateLimit", () => {
 
   it("expires its keys so counters cannot leak", async () => {
     const key = uniqueKey();
+    // Pinned so the window computed here is the one the call actually used.
+    pinClock(1_800_000_030_000);
     await checkRateLimit({ key, limit: 5, windowSeconds: 60, redis });
-    const window = Math.floor(Date.now() / 1000 / 60);
+    const window = Math.floor(1_800_000_030_000 / 1000 / 60);
     const ttl = await redis.ttl(`ratelimit:${key}:${window}`);
     expect(ttl).toBeGreaterThan(0);
     expect(ttl).toBeLessThanOrEqual(61);
@@ -104,7 +135,9 @@ describe("checkRateLimit", () => {
 
   it("resets when the window advances", async () => {
     const key = uniqueKey();
-    // A 1-second window makes the rollover observable without a long wait.
+    // Mid-window, so the first two calls cannot straddle a boundary.
+    const clock = pinClock(1_800_000_000_500);
+
     await checkRateLimit({ key, limit: 1, windowSeconds: 1, redis });
     const blocked = await checkRateLimit({
       key,
@@ -114,7 +147,7 @@ describe("checkRateLimit", () => {
     });
     expect(blocked.allowed).toBe(false);
 
-    await new Promise((resolve) => setTimeout(resolve, 1_100));
+    clock.advance(1_000);
     const afterReset = await checkRateLimit({
       key,
       limit: 1,

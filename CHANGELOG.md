@@ -4,6 +4,49 @@ All notable changes are documented here. Format follows
 [Keep a Changelog](https://keepachangelog.com/); versions follow semver
 (pre-1.0: minor = milestone).
 
+## [0.6.0] — 2026-08-01 · Milestone 2: Provider onboarding & storefront
+
+A provider can now sign up, create their business, describe it, say where they
+work, upload their licence and insurance, and submit for verification — and
+the public marketplace can find them once an admin approves.
+
+### Added
+
+- **Onboarding** (`/onboarding`): name, trades, and coverage areas, creating
+  the business and the creator's OWNER seat in one transaction. Public slugs
+  are derived from the name, deduplicated, and checked against a reserved
+  list so a storefront can never shadow a real route.
+- **Access layer** (`src/server/businesses/access.ts`): membership-based
+  authorization with `requireMembership` / `requireEditor` / `requireOwner`.
+  Non-members get a not-found error rather than a permission error, so a
+  stranger cannot learn that a business id exists.
+- **Storefront management** (`/storefront`): profile editing, service-area
+  add/remove, a readiness checklist, and submission for review. Submission
+  sets `PENDING_REVIEW` and never `ACTIVE` — nothing a provider controls can
+  list a business unverified.
+- **Verification documents**: `BusinessDocument` model, multipart upload at
+  `POST /api/documents`, and an authorization-checked download at
+  `GET /api/documents/[id]`. Type is decided by magic bytes rather than the
+  browser's claim; storage keys are generated; a failed insert deletes the
+  stored object; uploads are rate limited per user.
+- **Public marketplace**: `/browse` (city + province search, optional trade
+  filter, case-insensitive matching) and `/pro/[slug]`. Every unauthenticated
+  query filters `status: ACTIVE` and selects an explicit column list.
+- 118 new tests covering cross-business rejection of every read and write,
+  concurrent slug collisions, disguised file uploads, and the guarantee that
+  no non-`ACTIVE` business appears in any public query.
+
+### Fixed
+
+- A flaky rate-limit test: two calls with a one-second fixed window could
+  straddle a real window boundary. The clock is now pinned.
+
+### Documentation
+
+- New [providers & storefronts](docs/storefront.md) guide.
+- README, architecture, database, and testing docs updated — they still
+  described the study platform in places after the Milestone 1 pivot.
+
 ## [0.5.0] — 2026-08-01 · Milestone 1: Pivot to Roost
 
 **Product direction changed.** The project was previously an AI study

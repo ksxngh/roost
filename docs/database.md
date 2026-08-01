@@ -1,6 +1,6 @@
 # Database
 
-PostgreSQL 18 with the pgvector extension, accessed through Prisma 7.
+PostgreSQL 18, accessed through Prisma 7.
 
 ## Schema
 
@@ -8,67 +8,82 @@ Authentication tables are generated and owned by Better Auth's CLI. Domain
 tables are hand-written in the same file.
 
 > ⚠️ `npx @better-auth/cli generate` **overwrites `schema.prisma`**. After
-> running it, re-add the domain models and the `User` back-relations
-> (`classes`, `folders`, `documents`, `tags`) — there is a comment in the file
-> marking them.
+> running it, re-add the domain models and the `User.memberships`
+> back-relation — there is a comment in the file marking them.
 
 ```mermaid
 erDiagram
-    user ||--o{ class : owns
-    user ||--o{ folder : owns
-    user ||--o{ document : owns
-    user ||--o{ tag : owns
-    class ||--o{ folder : contains
-    class ||--o{ document : contains
-    folder ||--o{ folder : nests
-    folder ||--o{ document : contains
-    document ||--o{ document_page : "extracted into"
-    document ||--o{ document_tag : has
-    tag ||--o{ document_tag : applied_via
+    user ||--o{ business_member : "holds seat"
+    business ||--o{ business_member : "has seats"
+    business ||--o{ business_category : offers
+    business ||--o{ service_area : serves
+    business ||--o{ business_document : "proves with"
+    service_category ||--o{ business_category : "offered via"
 
-    document {
+    business {
         string id PK
-        string title
-        enum kind "PDF DOCX PPTX TEXT MARKDOWN IMAGE"
-        enum status "PENDING PROCESSING READY FAILED"
-        string storageKey UK
-        string checksum "sha256, unique per user"
-        int sizeBytes
-        int pageCount
-        int wordCount
-        string processingError
-        boolean favorite
-        datetime archivedAt
-        datetime deletedAt "soft delete"
-    }
-    document_page {
-        string id PK
-        string documentId FK
-        int pageNumber "1-based, for citations"
-        string text
-    }
-    class {
-        string id PK
-        string name "unique per user"
-        string color
-        datetime archivedAt
-    }
-    folder {
-        string id PK
+        string slug UK "public storefront address"
         string name
-        string classId FK "nullable"
-        string parentId FK "self-relation"
+        string tagline
+        string about
+        string phone
+        string email
+        string website
+        string logoKey
+        enum status "DRAFT PENDING_REVIEW ACTIVE SUSPENDED"
+        datetime verifiedAt
+        datetime insuredUntil
     }
-    tag {
+    business_member {
         string id PK
-        string name "unique per user"
-        string color
+        string businessId FK
+        string userId FK
+        enum role "OWNER ADMIN MEMBER"
+    }
+    service_category {
+        string id PK
+        string slug UK "stable, used in public URLs"
+        string name
+        string description
+        int position "display order"
+    }
+    business_category {
+        string businessId FK
+        string categoryId FK
+    }
+    service_area {
+        string id PK
+        string businessId FK
+        string city
+        string region "province or state"
+        string country "ISO-3166-1 alpha-2, default CA"
+    }
+    business_document {
+        string id PK
+        string businessId FK
+        enum kind "LICENCE INSURANCE OTHER"
+        string title "sanitized filename, display only"
+        string storageKey UK "generated, never user input"
+        string mimeType "from magic bytes, not the browser"
+        int sizeBytes
+        enum status "PENDING APPROVED REJECTED"
+        string reviewNote
+        datetime reviewedAt
+        datetime expiresAt
+        string uploadedById
     }
 ```
 
-Deletion behaviour is deliberate: removing a user or class cascades to its
-content, but deleting a class only _detaches_ its documents
-(`onDelete: SetNull`) so a student never loses uploads by tidying up.
+`Business` is the tenant boundary: every domain row hangs off it, and every
+query is scoped by a membership check rather than by `userId`. Deleting a
+business cascades to its seats, trades, areas, and documents; deleting a user
+removes their seats but leaves the business standing, so a departing team
+member cannot take the company with them.
+
+`(businessId, userId)` on `business_member` and `(businessId, city, region,
+country)` on `service_area` are unique, which is what makes re-adding the same
+city an idempotent no-op instead of an error. `service_area` is additionally
+indexed on `(city, region, country)` — that index serves marketplace search.
 
 ### Authentication tables
 
@@ -122,12 +137,10 @@ This project uses a Homebrew-managed PostgreSQL, not Docker (Docker is not
 installed on the current development machine).
 
 ```bash
-brew install pgvector postgresql@18
+brew install postgresql@18
 brew services start postgresql@18
-createdb studyforge
-createdb studyforge_test
-psql -d studyforge -c "CREATE EXTENSION IF NOT EXISTS vector;"
-psql -d studyforge_test -c "CREATE EXTENSION IF NOT EXISTS vector;"
+createdb roost
+createdb roost_test
 ```
 
 Then apply migrations:
@@ -156,7 +169,8 @@ Notes specific to Prisma 7:
 
 ## Test database
 
-`src/test/global-setup.ts` points the suite at `studyforge_test` and runs
-`prisma migrate deploy` before any test, so tests exercise the exact migration
-chain that ships to production. Integration tests assert the database name
-contains `studyforge_test` before any destructive cleanup.
+`src/test/global-setup.ts` points the suite at `roost_test` (override with
+`TEST_DATABASE_URL`) and runs `prisma migrate deploy` before any test, so
+tests exercise the exact migration chain that ships to production. Integration
+tests assert the database name contains `roost_test` before any destructive
+cleanup.
