@@ -12,7 +12,7 @@ let root: string;
 let store: LocalStorage;
 
 beforeEach(async () => {
-  root = await fs.mkdtemp(path.join(os.tmpdir(), "studyforge-storage-"));
+  root = await fs.mkdtemp(path.join(os.tmpdir(), "roost-storage-"));
   store = new LocalStorage(root);
 });
 

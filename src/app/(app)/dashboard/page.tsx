@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { Flame, Clock3, Target, TrendingUp } from "lucide-react";
+import { CalendarClock, CircleDollarSign, FileText, Users } from "lucide-react";
 
 import { PageHeader } from "@/components/page-header";
 import {
@@ -9,22 +9,40 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
+import { requireSession } from "@/server/session";
 
 export const metadata: Metadata = { title: "Dashboard" };
 
+/**
+ * The provider's home screen. Ordered the way a service business actually
+ * checks in: what's on today, what needs a reply, what's owed.
+ */
 const stats = [
-  { label: "Study streak", value: "—", hint: "days in a row", icon: Flame },
-  { label: "Study time", value: "—", hint: "this week", icon: Clock3 },
-  { label: "Cards due", value: "—", hint: "for review today", icon: Target },
-  { label: "Retention", value: "—", hint: "30-day average", icon: TrendingUp },
+  { label: "Jobs today", value: "—", hint: "scheduled", icon: CalendarClock },
+  {
+    label: "Open quotes",
+    value: "—",
+    hint: "awaiting approval",
+    icon: FileText,
+  },
+  {
+    label: "Unpaid invoices",
+    value: "—",
+    hint: "outstanding",
+    icon: CircleDollarSign,
+  },
+  { label: "Clients", value: "—", hint: "total", icon: Users },
 ];
 
-export default function DashboardPage() {
+export default async function DashboardPage() {
+  const { user } = await requireSession();
+  const firstName = user.name.split(/\s+/)[0];
+
   return (
     <div className="mx-auto w-full max-w-6xl">
       <PageHeader
-        title="Dashboard"
-        description="Your studying at a glance — streaks, reviews due, and where to focus next."
+        title={`Welcome back, ${firstName}`}
+        description="Today at a glance — what's booked, what needs action, and what you're owed."
       />
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
         {stats.map((stat) => (
@@ -33,10 +51,7 @@ export default function DashboardPage() {
               <CardTitle className="text-sm font-medium">
                 {stat.label}
               </CardTitle>
-              <stat.icon
-                className="text-muted-foreground size-4"
-                aria-hidden="true"
-              />
+              <stat.icon className="text-muted-foreground size-4" aria-hidden />
             </CardHeader>
             <CardContent>
               <p className="text-2xl font-semibold">{stat.value}</p>
@@ -46,8 +61,7 @@ export default function DashboardPage() {
         ))}
       </div>
       <p className="text-muted-foreground mt-8 text-sm">
-        Statistics activate once you upload material and start reviewing —
-        coming online in the next milestones.
+        These fill in once your storefront is live and bookings start arriving.
       </p>
     </div>
   );

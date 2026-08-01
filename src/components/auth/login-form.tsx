@@ -102,7 +102,7 @@ export function LoginForm({ googleEnabled }: { googleEnabled: boolean }) {
           </Button>
         </form>
         <p className="text-muted-foreground text-center text-sm">
-          New to StudyForge?{" "}
+          New to Roost?{" "}
           <Link
             href="/signup"
             className="text-foreground underline underline-offset-4"

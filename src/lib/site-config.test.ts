@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 
-import { appNav, settingsNav, siteConfig } from "@/lib/site-config";
+import { businessNav, settingsNav, siteConfig } from "@/lib/site-config";
 
 describe("siteConfig", () => {
   it("has a name and description for metadata", () => {
@@ -14,7 +14,7 @@ describe("siteConfig", () => {
 });
 
 describe("navigation", () => {
-  const allItems = [...appNav, ...settingsNav];
+  const allItems = [...businessNav, ...settingsNav];
 
   it("contains no duplicate hrefs", () => {
     const hrefs = allItems.map((item) => item.href);

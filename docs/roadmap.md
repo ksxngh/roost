@@ -1,50 +1,52 @@
 # Roadmap
 
+Roost is a home-services marketplace plus the operations software the
+providers on it run their business with. Two audiences, one system.
+
 Each milestone ships tested, documented, and releasable before the next
 begins.
 
-| #   | Milestone        | Scope                                                                                      | Status  |
-| --- | ---------------- | ------------------------------------------------------------------------------------------ | ------- |
-| 1   | Foundation       | Scaffold, design system, app shell, test + CI infrastructure, docs                         | ✅ Done |
-| 2   | Database & Auth  | Prisma + PostgreSQL, Better Auth (email/password + Google), verification, protected routes | ✅ Done |
-| 3A  | Content pipeline | Data model, storage drivers, upload API, parsing (PDF/DOCX/PPTX/OCR) on BullMQ             | ✅ Done |
-| 3B  | Library UI       | Classes/folders/tags UI and CRUD, upload experience, search, organize actions              | Next    |
-| 4   | RAG & AI Chat    | Chunking, embeddings (pgvector), streaming chat with citations, grounded answers only      |         |
-| 5   | Generation       | Flashcards, quizzes, summaries, guides, mnemonics, exam questions; AI credit metering      |         |
-| 6   | Study Systems    | FSRS spaced repetition, quiz engine, analytics dashboard, streaks, achievements            |         |
-| 7   | Billing          | Stripe subscriptions, free/premium gating, invoices, trials, coupons                       |         |
-| 8   | Admin            | User/subscription management, feature flags, prompt management, moderation, support        |         |
-| 9   | Hardening        | Rate limiting, security audit, WCAG pass, performance budget, load testing                 |         |
-| 10  | Deploy           | Docker, CD pipeline, Sentry, PostHog, runbooks                                             |         |
+| #   | Milestone                        | Scope                                                                         | Status  |
+| --- | -------------------------------- | ----------------------------------------------------------------------------- | ------- |
+| 1   | Pivot & core domain              | Businesses, team seats, trades, service areas; rebrand; provider shell        | ✅ Done |
+| 2   | Provider onboarding & storefront | Business profile, coverage areas, licence/insurance upload, public storefront | Next    |
+| 3   | Service packages & availability  | Fixed-price packages, business hours, real bookable slots                     |         |
+| 4   | Marketplace & booking            | City/category search, listings, slot selection, booking creation              |         |
+| 5   | Payments                         | Stripe Connect onboarding, checkout, platform fee, payouts                    |         |
+| 6   | Jobs & scheduling ops            | Job lifecycle, double-booking prevention, calendar                            |         |
+| 7   | Quotes & invoicing               | Estimate → approval → scheduled job → invoice                                 |         |
+| 8   | Client CRM                       | Auto-built client list, history, notes, addresses                             |         |
+| 9   | Teams & permissions              | Seats, job assignment, granular permissions                                   |         |
+| 10  | Subscriptions                    | Pro/Premium tiers, feature gating, billing                                    |         |
+| 11  | Admin, hardening, deploy         | Moderation, verification queue, rate limits, WCAG, CD                         |         |
+
+Milestones 4 and 5 are where the marketplace becomes real — everything
+before them exists to make sure there is something worth booking.
+
+## Sequencing note
+
+The marketplace is a two-sided cold start: providers need customers and
+customers need providers. The operations software has no such problem — a
+solo cleaner gets value from scheduling and invoicing on day one with nobody
+else on the platform. Milestones 2, 3, 6, 7, and 8 are therefore useful to a
+provider even before the marketplace has demand, which is deliberate.
 
 ## Carried-forward work
 
-Items deliberately deferred, so they don't get lost:
+Deliberately deferred, tracked so it doesn't get lost:
 
-- **Rate-limit storage** — a shared Redis limiter now exists
-  (`src/server/rate-limit.ts`) and protects uploads, but Better Auth's own
-  endpoints still use its in-memory limiter. Migrate them in Milestone 9.
-  See [auth.md](auth.md#rate-limiting).
-- **Storage purge job** — soft-deleted documents keep their stored objects.
-  A scheduled purge belongs with the retention work in Milestone 9.
-- **Streaming uploads** — the upload route buffers the file in memory, which
-  is fine at 25 MB but would need streaming multipart parsing to go much
-  higher. See [content-pipeline.md](content-pipeline.md#known-limitations).
-- **Nested folder navigation** — the schema supports nesting and `moveFolder`
-  rejects cycles (tested), but the UI is one level deep, so
-  `moveFolderAction` has no caller yet. Needs breadcrumbs and a move-folder
-  control. See [library.md](library.md#known-limitations).
-- **Library pagination UI** — cursor pagination exists and is tested in the
-  service layer; the page still renders only the first 50 documents.
+- **Rate-limit storage** — a shared Redis limiter exists
+  (`src/server/rate-limit.ts`); Better Auth's own endpoints still use its
+  in-memory limiter. Migrate in Milestone 11.
 - **Email verification enforcement** — verification mail is sent but sign-in
-  is not blocked on it. Flip to required once a production email provider is
-  configured (Milestone 10 at the latest).
-- **Account deletion / privacy settings** — listed in the product spec,
-  scheduled alongside subscription management in Milestone 7.
+  is not blocked on it. Flip once a production email provider is configured.
+- **Background worker** — the BullMQ queue and Redis wiring are in place, but
+  the worker entry point was removed with the document pipeline. It returns
+  in Milestone 5 for payout and notification jobs.
+- **Storage purge job** — soft-deleted records keep their stored objects.
 
-## Local environment note
+## Local environment
 
-Docker is not installed on this development machine. PostgreSQL 18 and
-pgvector 0.8.6 run natively via Homebrew instead — see
-[database.md](database.md#local-setup). CI uses a `pgvector/pgvector:pg18`
-service container.
+Docker is not installed on this machine. PostgreSQL 18 and Redis run natively
+via Homebrew — see [database.md](database.md#local-setup). CI uses
+`pgvector/pgvector:pg18` and `redis:8-alpine` service containers.

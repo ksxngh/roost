@@ -1,7 +1,7 @@
 // @vitest-environment node
 /**
  * Integration tests: real Better Auth server API against the throwaway
- * studyforge_test database (schema pushed by src/test/global-setup.ts).
+ * roost_test database (schema pushed by src/test/global-setup.ts).
  */
 import { APIError } from "better-auth";
 import { beforeAll, beforeEach, describe, expect, it, vi } from "vitest";
@@ -31,7 +31,7 @@ async function signUp(email: string, password = PASSWORD) {
 
 beforeAll(async () => {
   // Sanity check: never run destructive cleanup against a non-test database.
-  expect(process.env.DATABASE_URL).toContain("studyforge_test");
+  expect(process.env.DATABASE_URL).toContain("roost_test");
 });
 
 beforeEach(async () => {

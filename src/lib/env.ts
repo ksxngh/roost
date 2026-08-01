@@ -26,7 +26,7 @@ const serverSchema = z.object({
   GOOGLE_CLIENT_SECRET: z.string().min(1).optional(),
   // Optional: real email delivery activates when present (console otherwise).
   RESEND_API_KEY: z.string().min(1).optional(),
-  EMAIL_FROM: z.email().default("noreply@studyforge.local"),
+  EMAIL_FROM: z.email().default("noreply@roost.local"),
   // Queues and background jobs.
   REDIS_URL: z.url({ protocol: /^rediss?$/ }).default("redis://localhost:6379"),
 

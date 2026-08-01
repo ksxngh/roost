@@ -1,56 +1,64 @@
 /**
- * Central place for product identity and top-level navigation. Every surface
- * (metadata, shell, marketing) reads from here so a rename or nav change is a
- * one-file edit.
+ * Product identity and navigation. Every surface (metadata, shells, marketing)
+ * reads from here, so a rename or nav change is a one-file edit.
  */
 import {
-  BookOpen,
-  GraduationCap,
+  CalendarDays,
+  FileText,
   LayoutDashboard,
-  Library,
-  MessageSquare,
+  Receipt,
   Settings,
-  SquareStack,
+  Store,
+  Users,
   type LucideIcon,
 } from "lucide-react";
 
 export const siteConfig = {
-  name: "StudyForge",
+  name: "Roost",
+  /** Shown to homeowners on the marketplace. */
   description:
-    "Turn lecture notes, PDFs, and slides into flashcards, quizzes, and an AI tutor that only answers from your material.",
+    "Book trusted local home services at upfront prices — or run and grow your service business on one platform.",
+  /** Shown to providers on the business side. */
+  businessDescription:
+    "Win local customers and run everything behind the work: scheduling, quotes, invoicing, and your whole client list.",
   url: process.env.NEXT_PUBLIC_APP_URL ?? "http://localhost:3000",
+  supportEmail: "support@roost.local",
 } as const;
 
 export type NavItem = {
   title: string;
   href: string;
   icon: LucideIcon;
-  /** Matched against the pathname to mark the active item. */
+  /** Matched against the first path segment to mark the active item. */
   segment: string;
 };
 
-export const appNav: NavItem[] = [
+/**
+ * Provider-side navigation. Ordered by how a service business actually moves
+ * through a day: what's happening now, then the work, then the money.
+ */
+export const businessNav: NavItem[] = [
   {
     title: "Dashboard",
     href: "/dashboard",
     icon: LayoutDashboard,
     segment: "dashboard",
   },
-  { title: "Library", href: "/library", icon: Library, segment: "library" },
   {
-    title: "Flashcards",
-    href: "/flashcards",
-    icon: SquareStack,
-    segment: "flashcards",
+    title: "Schedule",
+    href: "/schedule",
+    icon: CalendarDays,
+    segment: "schedule",
   },
+  { title: "Clients", href: "/clients", icon: Users, segment: "clients" },
+  { title: "Quotes", href: "/quotes", icon: FileText, segment: "quotes" },
+  { title: "Invoices", href: "/invoices", icon: Receipt, segment: "invoices" },
   {
-    title: "Quizzes",
-    href: "/quizzes",
-    icon: GraduationCap,
-    segment: "quizzes",
+    title: "Storefront",
+    href: "/storefront",
+    icon: Store,
+    segment: "storefront",
   },
-  { title: "AI Chat", href: "/chat", icon: MessageSquare, segment: "chat" },
-  { title: "Guides", href: "/guides", icon: BookOpen, segment: "guides" },
 ];
 
 export const settingsNav: NavItem[] = [

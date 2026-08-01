@@ -1,12 +1,12 @@
 import Link from "next/link";
-import { Sparkles } from "lucide-react";
+import { House } from "lucide-react";
 
 import { siteConfig } from "@/lib/site-config";
 
 function BrandGlyph() {
   return (
     <span className="bg-primary text-primary-foreground flex size-7 items-center justify-center rounded-md">
-      <Sparkles className="size-4" aria-hidden="true" />
+      <House className="size-4" aria-hidden="true" />
     </span>
   );
 }

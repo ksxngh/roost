@@ -4,7 +4,7 @@ import { parseClientEnv, parseServerEnv } from "@/lib/env";
 
 /** Minimal valid server environment for Milestone 2. */
 const base = {
-  DATABASE_URL: "postgresql://user:pass@localhost:5432/studyforge",
+  DATABASE_URL: "postgresql://user:pass@localhost:5432/roost",
   BETTER_AUTH_SECRET: "0123456789abcdef0123456789abcdef",
 };
 
@@ -12,7 +12,7 @@ describe("parseServerEnv", () => {
   it("accepts a minimal valid configuration and applies defaults", () => {
     const env = parseServerEnv(base);
     expect(env.NODE_ENV).toBe("development");
-    expect(env.EMAIL_FROM).toBe("noreply@studyforge.local");
+    expect(env.EMAIL_FROM).toBe("noreply@roost.local");
     expect(env.GOOGLE_CLIENT_ID).toBeUndefined();
   });
 
@@ -24,7 +24,7 @@ describe("parseServerEnv", () => {
       GOOGLE_CLIENT_ID: "client-id",
       GOOGLE_CLIENT_SECRET: "client-secret",
       RESEND_API_KEY: "re_123",
-      EMAIL_FROM: "hello@studyforge.app",
+      EMAIL_FROM: "hello@roost.app",
     });
     expect(env.NODE_ENV).toBe("production");
     expect(env.GOOGLE_CLIENT_ID).toBe("client-id");

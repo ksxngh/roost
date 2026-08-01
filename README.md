@@ -2,8 +2,8 @@
 
 An AI-powered study platform: upload lecture notes, PDFs, and slides, and StudyForge turns them into flashcards, quizzes, summaries, and an AI tutor that answers only from your material.
 
-> **Status:** Milestone 3 complete — upload, parse, organize, and search all
-> work end to end. Milestone 4 adds the AI features. See
+> **Status:** Milestone 1 complete — core domain, auth, and the provider shell.
+> Milestone 2 adds provider onboarding and public storefronts. See
 > [docs/roadmap.md](docs/roadmap.md).
 
 ## Stack
@@ -31,8 +31,8 @@ npm install
 cp .env.example .env
 openssl rand -base64 32          # paste into BETTER_AUTH_SECRET
 npx prisma migrate dev
+npm run seed                     # loads the service categories
 npm run dev                      # http://localhost:3000
-npm run worker                   # in a second terminal — processes uploads
 ```
 
 Sign up at `/signup`. With no email provider configured, the verification
@@ -43,7 +43,7 @@ link prints to the server log — copy it from the terminal.
 | Script                  | Purpose                 |
 | ----------------------- | ----------------------- |
 | `npm run dev`           | Dev server (Turbopack)  |
-| `npm run worker`        | Background job worker   |
+| `npm run seed`          | Seed service categories |
 | `npm run build`         | Production build        |
 | `npm run test`          | Run the test suite once |
 | `npm run test:watch`    | Watch mode              |
@@ -59,24 +59,18 @@ link prints to the server log — copy it from the terminal.
 prisma/           # Schema + migrations
 src/
   app/            # App Router routes
-    (app)/        # Session-protected app (dashboard, library, …)
+    (app)/        # Session-protected provider app (dashboard, schedule, …)
     (auth)/       # Login, signup, password reset
     api/auth/     # Better Auth HTTP handler
     page.tsx      # Marketing landing page
   components/
     auth/         # Auth forms and fields
-    library/      # Library UI: cards, dialogs, folders, upload, search
     shell/        # App frame (sidebar, topbar, user menu)
     ui/           # shadcn/ui primitives (generated, not hand-edited)
   lib/            # Config, env validation, validation schemas, utilities
-  hooks/          # Reusable client hooks
   server/         # Framework-agnostic server code
-    documents/    # Upload validation, upload service, processing
-    library/      # Classes, folders, tags, documents + server actions
-    parsing/      # PDF, DOCX, PPTX, text, and OCR extraction
     queue/        # Redis connection and BullMQ queues
     storage/      # Storage interface + local/S3 drivers
-  worker/         # Background job worker entry point
   test/           # Test setup and global setup
 docs/             # Architecture, ADRs, roadmap, auth, database, testing
 ```
@@ -85,8 +79,6 @@ docs/             # Architecture, ADRs, roadmap, auth, database, testing
 
 - [Architecture](docs/architecture.md)
 - [Authentication](docs/auth.md)
-- [Content pipeline](docs/content-pipeline.md)
-- [Library](docs/library.md)
 - [Database](docs/database.md)
 - [Roadmap](docs/roadmap.md)
 - [Testing](docs/testing.md)

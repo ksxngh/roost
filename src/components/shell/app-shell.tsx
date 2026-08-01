@@ -16,7 +16,7 @@ import {
   SheetTitle,
   SheetTrigger,
 } from "@/components/ui/sheet";
-import { appNav, settingsNav } from "@/lib/site-config";
+import { businessNav, settingsNav } from "@/lib/site-config";
 
 /**
  * Authenticated application frame: fixed sidebar on desktop, sheet-based
@@ -40,7 +40,7 @@ export function AppShell({
         </div>
         <Separator />
         <div className="flex flex-1 flex-col justify-between overflow-y-auto p-3">
-          <SidebarNav items={appNav} />
+          <SidebarNav items={businessNav} />
           <SidebarNav items={settingsNav} />
         </div>
       </aside>
@@ -67,7 +67,7 @@ export function AppShell({
               <Separator />
               <div className="flex flex-1 flex-col justify-between overflow-y-auto p-3">
                 <SidebarNav
-                  items={appNav}
+                  items={businessNav}
                   onNavigate={() => setMobileNavOpen(false)}
                 />
                 <SidebarNav

@@ -28,10 +28,7 @@ model User {
   accounts      Account[]
 
   // --- hand-written domain back-relations ---
-  classes   Class[]
-  folders   Folder[]
-  documents Document[]
-  tags      Tag[]
+  memberships BusinessMember[]
 
   @@unique([email])
   @@map("user")
@@ -89,148 +86,116 @@ model Verification {
 // Domain models (hand-written — see the note on User above)
 // ─────────────────────────────────────────────────────────────────────────
 
-enum DocumentKind {
-  PDF
-  DOCX
-  PPTX
-  TEXT
-  MARKDOWN
-  IMAGE
+/// Seat role within one business. Owners can never be removed or demoted by
+/// another member; that guarantee is enforced in the service layer.
+enum BusinessRole {
+  OWNER
+  ADMIN
+  MEMBER
 }
 
-enum DocumentStatus {
-  /// Stored, waiting for a worker to pick it up.
-  PENDING
-  /// A worker is extracting text.
-  PROCESSING
-  /// Text extracted; ready to study.
-  READY
-  /// Extraction failed; see processingError.
-  FAILED
+enum BusinessStatus {
+  /// Being set up; not publicly listed.
+  DRAFT
+  /// Submitted for verification of licence and insurance.
+  PENDING_REVIEW
+  /// Verified and listed on the marketplace.
+  ACTIVE
+  /// Hidden from the marketplace by an admin.
+  SUSPENDED
 }
 
-/// A course the student is taking. Top level of the library hierarchy.
-model Class {
-  id     String @id @default(cuid())
-  name   String
-  /// Token name from the chart palette, e.g. "chart-1".
-  color  String @default("chart-1")
-  userId String
-  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+/// A home-service business — the provider side of the marketplace and the
+/// tenant boundary for all operational data (jobs, quotes, clients).
+model Business {
+  id      String  @id @default(cuid())
+  /// URL segment for the public storefront: /pro/<slug>.
+  slug    String  @unique
+  name    String
+  tagline String?
+  about   String?
+  phone   String?
+  email   String?
+  website String?
+  /// Storage key for the logo; served through the storage driver.
+  logoKey String?
 
-  folders    Folder[]
-  documents  Document[]
-  archivedAt DateTime?
-  createdAt  DateTime   @default(now())
-  updatedAt  DateTime   @updatedAt
+  status       BusinessStatus @default(DRAFT)
+  /// Set when licence and insurance documents have been checked.
+  verifiedAt   DateTime?
+  /// Expiry of the insurance certificate on file; drives re-verification.
+  insuredUntil DateTime?
 
-  @@unique([userId, name])
-  @@index([userId, archivedAt])
-  @@map("class")
+  members      BusinessMember[]
+  categories   BusinessCategory[]
+  serviceAreas ServiceArea[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([status])
+  @@map("business")
 }
 
-/// Nestable folder. May live inside a class or at the library root.
-model Folder {
-  id       String  @id @default(cuid())
-  name     String
-  userId   String
-  user     User    @relation(fields: [userId], references: [id], onDelete: Cascade)
-  classId  String?
-  class    Class?  @relation(fields: [classId], references: [id], onDelete: Cascade)
-  parentId String?
-  parent   Folder? @relation("FolderTree", fields: [parentId], references: [id], onDelete: Cascade)
+/// A person's seat in a business. The subscription tier caps how many of
+/// these may exist (1 on Pro, 8 on Premium).
+model BusinessMember {
+  id         String       @id @default(cuid())
+  businessId String
+  business   Business     @relation(fields: [businessId], references: [id], onDelete: Cascade)
+  userId     String
+  user       User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  role       BusinessRole @default(MEMBER)
 
-  children  Folder[]   @relation("FolderTree")
-  documents Document[]
-  createdAt DateTime   @default(now())
-  updatedAt DateTime   @updatedAt
+  createdAt DateTime @default(now())
 
+  @@unique([businessId, userId])
   @@index([userId])
-  @@index([classId])
-  @@index([parentId])
-  @@map("folder")
+  @@map("business_member")
 }
 
-/// An uploaded piece of study material.
-model Document {
-  id     String         @id @default(cuid())
-  title  String
-  kind   DocumentKind
-  status DocumentStatus @default(PENDING)
+/// A trade the marketplace supports (plumbing, HVAC, interior cleaning, …).
+/// Seeded from a fixed list so category pages have stable URLs.
+model ServiceCategory {
+  id          String  @id @default(cuid())
+  /// URL segment: /services/<slug>.
+  slug        String  @unique
+  name        String
+  description String?
+  /// Ordering on the browse page; lower sorts first.
+  position    Int     @default(0)
 
-  /// Opaque object-storage key; never derived from user input.
-  storageKey String @unique
-  mimeType   String
-  sizeBytes  Int
-  /// SHA-256 of the bytes: integrity checks and per-user deduplication.
-  checksum   String
-  pageCount  Int?
-  wordCount  Int?
+  businesses BusinessCategory[]
 
-  processingError String?
-  processedAt     DateTime?
-
-  userId   String
-  user     User    @relation(fields: [userId], references: [id], onDelete: Cascade)
-  classId  String?
-  class    Class?  @relation(fields: [classId], references: [id], onDelete: SetNull)
-  folderId String?
-  folder   Folder? @relation(fields: [folderId], references: [id], onDelete: SetNull)
-
-  pages DocumentPage[]
-  tags  DocumentTag[]
-
-  favorite   Boolean   @default(false)
-  archivedAt DateTime?
-  /// Soft delete: rows survive for restore and are purged by a later job.
-  deletedAt  DateTime?
-  createdAt  DateTime  @default(now())
-  updatedAt  DateTime  @updatedAt
-
-  @@unique([userId, checksum])
-  @@index([userId, deletedAt, archivedAt])
-  @@index([userId, status])
-  @@index([folderId])
-  @@index([classId])
-  @@map("document")
+  @@map("service_category")
 }
 
-/// Extracted text for one page/slide. Page numbers make citation possible
-/// without reparsing the source file.
-model DocumentPage {
+model BusinessCategory {
+  businessId String
+  business   Business        @relation(fields: [businessId], references: [id], onDelete: Cascade)
+  categoryId String
+  category   ServiceCategory @relation(fields: [categoryId], references: [id], onDelete: Cascade)
+
+  @@id([businessId, categoryId])
+  @@index([categoryId])
+  @@map("business_category")
+}
+
+/// A place a business will travel to. Marketplace search matches on these,
+/// which is what makes "no providers serve this city yet" answerable.
+model ServiceArea {
   id         String   @id @default(cuid())
-  documentId String
-  document   Document @relation(fields: [documentId], references: [id], onDelete: Cascade)
-  pageNumber Int
-  text       String
+  businessId String
+  business   Business @relation(fields: [businessId], references: [id], onDelete: Cascade)
+  city       String
+  /// Province or state code, e.g. "BC".
+  region     String
+  /// ISO 3166-1 alpha-2, e.g. "CA".
+  country    String   @default("CA")
 
-  @@unique([documentId, pageNumber])
-  @@index([documentId])
-  @@map("document_page")
-}
+  createdAt DateTime @default(now())
 
-model Tag {
-  id     String @id @default(cuid())
-  name   String
-  color  String @default("chart-2")
-  userId String
-  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
-
-  documents DocumentTag[]
-  createdAt DateTime      @default(now())
-
-  @@unique([userId, name])
-  @@index([userId])
-  @@map("tag")
-}
-
-model DocumentTag {
-  documentId String
-  document   Document @relation(fields: [documentId], references: [id], onDelete: Cascade)
-  tagId      String
-  tag        Tag      @relation(fields: [tagId], references: [id], onDelete: Cascade)
-
-  @@id([documentId, tagId])
-  @@index([tagId])
-  @@map("document_tag")
+  @@unique([businessId, city, region, country])
+  @@index([city, region, country])
+  @@map("service_area")
 }

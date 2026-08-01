@@ -1,8 +1,48 @@
 # Changelog
 
-All notable changes to StudyForge are documented here. Format follows
+All notable changes are documented here. Format follows
 [Keep a Changelog](https://keepachangelog.com/); versions follow semver
 (pre-1.0: minor = milestone).
+
+## [0.5.0] — 2026-08-01 · Milestone 1: Pivot to Roost
+
+**Product direction changed.** The project was previously an AI study
+platform. After reviewing padpal.com directly, the target was corrected to a
+home-services marketplace plus provider operations software. Renamed
+StudyForge → Roost.
+
+### Added
+
+- Core domain: `Business` (the provider org and tenant boundary),
+  `BusinessMember` (team seats with OWNER/ADMIN/MEMBER roles),
+  `ServiceCategory` (26 seeded trades with stable public slugs),
+  `BusinessCategory`, and `ServiceArea` (city coverage — the data behind
+  "no providers serve this city yet").
+- Seed script (`npm run seed`) for the service-category reference data.
+- Provider application shell: dashboard, schedule, clients, quotes, invoices,
+  and storefront, with metrics ordered the way a service business checks in.
+- Marketplace landing page addressing both audiences — homeowners above,
+  providers in a visually distinct band below.
+
+### Removed
+
+- Document parsers (PDF/DOCX/PPTX/OCR), the library UI, and the study domain
+  models (`Class`, `Folder`, `Document`, `DocumentPage`, `Tag`).
+- The document-processing worker entry point. The BullMQ queue and Redis
+  wiring are retained for payout and notification jobs in Milestone 5.
+
+### Retained
+
+Everything below the domain layer carried over unchanged: Next.js foundation,
+design system, Postgres + Prisma, Better Auth with Google, sessions and route
+protection, the mailer abstraction, Redis rate limiting, storage drivers
+(local + S3), upload validation, CI, and the test harness.
+
+### Changed
+
+- Databases renamed `studyforge`/`studyforge_test` → `roost`/`roost_test`.
+- Migration history reset to a single initial migration, since the prior
+  chain described a product that no longer exists.
 
 ## [0.4.0] — 2026-07-31 · Milestone 3B: Library UI
 

@@ -44,7 +44,7 @@ describe("ResendMailer", () => {
       .spyOn(globalThis, "fetch")
       .mockResolvedValue(new Response("{}", { status: 200 }));
 
-    await new ResendMailer("re_key", "from@studyforge.app").send(message);
+    await new ResendMailer("re_key", "from@roost.app").send(message);
 
     const [url, init] = fetchMock.mock.calls[0]!;
     expect(url).toBe("https://api.resend.com/emails");
@@ -53,7 +53,7 @@ describe("ResendMailer", () => {
     );
     const body = JSON.parse(init?.body as string);
     expect(body).toMatchObject({
-      from: "from@studyforge.app",
+      from: "from@roost.app",
       to: message.to,
       subject: message.subject,
     });
@@ -64,7 +64,7 @@ describe("ResendMailer", () => {
       new Response("invalid api key", { status: 401 }),
     );
     await expect(
-      new ResendMailer("bad", "from@studyforge.app").send(message),
+      new ResendMailer("bad", "from@roost.app").send(message),
     ).rejects.toThrow(/401.*invalid api key/);
   });
 
@@ -73,7 +73,7 @@ describe("ResendMailer", () => {
       new TypeError("fetch failed"),
     );
     await expect(
-      new ResendMailer("re_key", "from@studyforge.app").send(message),
+      new ResendMailer("re_key", "from@roost.app").send(message),
     ).rejects.toThrow("fetch failed");
   });
 });

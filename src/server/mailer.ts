@@ -19,7 +19,7 @@ export class ConsoleMailer implements Mailer {
     console.info(
       [
         "",
-        "━━━ StudyForge mail (console transport) ━━━",
+        "━━━ Roost mail (console transport) ━━━",
         `To:      ${message.to}`,
         `Subject: ${message.subject}`,
         "",
