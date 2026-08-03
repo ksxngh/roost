@@ -4,6 +4,48 @@ All notable changes are documented here. Format follows
 [Keep a Changelog](https://keepachangelog.com/); versions follow semver
 (pre-1.0: minor = milestone).
 
+## [0.8.0] — 2026-08-02 · Milestone 4: Marketplace & booking
+
+The marketplace works end to end: a customer finds a pro, picks a real time,
+and books it; the provider accepts or declines from their schedule.
+
+### Added
+
+- **Booking flow** (`/pro/<slug>/book`): pick a slot, give contact and
+  address details, get a reference. No account required — a homeowner
+  shouldn't have to sign up to hire someone. Signed-in customers get the
+  booking linked to their account.
+- **Booking confirmation** (`/booking/<reference>`): status, time, address,
+  and the business's contact details.
+- **Provider schedule** (`/schedule`): requests waiting on a reply and
+  confirmed work, with accept, decline, complete, and cancel.
+- **Notification mail** to both sides when a booking is requested, addressed
+  in the business's timezone.
+- **Double-booking prevention as a database constraint** — a Postgres
+  `EXCLUDE USING gist` over `(businessId, tstzrange(startAt, endAt))`, so two
+  customers cannot hold the same slot regardless of timing. See
+  [docs/booking.md](docs/booking.md).
+- 112 new tests, including eight genuinely concurrent booking attempts where
+  exactly one wins.
+
+### Changed
+
+- Availability now subtracts live bookings, using the same `PENDING` +
+  `CONFIRMED` set the database constraint enforces.
+- `startAt`/`endAt` are `timestamptz`: Prisma's default zone-less
+  `timestamp` makes `tstzrange` non-immutable and unindexable, and these are
+  instants anyway.
+
+### Security
+
+- Booking submission is rate limited per client address, since it is
+  unauthenticated.
+- Booking references are CSPRNG-generated with rejection sampling, from an
+  alphabet that omits characters people misread aloud. The confirmation page
+  is `noindex` and rejects malformed references before querying.
+- `getBookingByReference` excludes the customer's email and phone: the
+  reference proves you made the booking, not that you get a contact dump.
+
 ## [0.7.0] — 2026-08-01 · Milestone 3: Services & availability
 
 Providers can now publish priced services and the hours they work, and the

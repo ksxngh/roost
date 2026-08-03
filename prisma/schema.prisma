@@ -29,6 +29,7 @@ model User {
 
   // --- hand-written domain back-relations ---
   memberships BusinessMember[]
+  bookings    Booking[]
 
   @@unique([email])
   @@map("user")
@@ -135,6 +136,7 @@ model Business {
   bookingHorizonDays Int    @default(30)
 
   members                BusinessMember[]
+  bookings               Booking[]
   categories             BusinessCategory[]
   serviceAreas           ServiceArea[]
   documents              BusinessDocument[]
@@ -290,6 +292,8 @@ model ServicePackage {
   active   Boolean @default(true)
   position Int     @default(0)
 
+  bookings Booking[]
+
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
@@ -328,4 +332,75 @@ model AvailabilityException {
 
   @@unique([businessId, date])
   @@map("availability_exception")
+}
+
+enum BookingStatus {
+  /// Requested by a customer, not yet accepted by the business.
+  PENDING
+  /// Accepted; the business is committed to showing up.
+  CONFIRMED
+  /// The business turned it down.
+  DECLINED
+  /// Called off by either side after it was requested.
+  CANCELLED
+  /// The work happened.
+  COMPLETED
+}
+
+/// A customer's request for a specific service at a specific time.
+///
+/// Service details are *copied* onto the booking rather than referenced,
+/// because a business may reprice or delete a package afterwards and neither
+/// should rewrite history. `packageId` is kept only as a soft link.
+model Booking {
+  id         String   @id @default(cuid())
+  /// Short human-quotable code; the customer's only handle on the booking.
+  reference  String   @unique
+  businessId String
+  business   Business @relation(fields: [businessId], references: [id], onDelete: Cascade)
+
+  packageId       String?
+  package         ServicePackage? @relation(fields: [packageId], references: [id], onDelete: SetNull)
+  /// Snapshot of the service as sold.
+  packageName     String
+  pricingModel    PricingModel
+  priceCents      Int?
+  durationMinutes Int
+
+  startAt  DateTime
+  /// Always `startAt + durationMinutes`; stored so the database can enforce
+  /// non-overlap without recomputing it.
+  endAt    DateTime
+  /// The business's timezone when booked, so the time can be redisplayed
+  /// exactly as the customer saw it.
+  timezone String
+
+  status BookingStatus @default(PENDING)
+
+  /// Marketplace customers need not have an account; the account link is set
+  /// when they happened to be signed in.
+  userId        String?
+  user          User?   @relation(fields: [userId], references: [id], onDelete: SetNull)
+  customerName  String
+  customerEmail String
+  customerPhone String
+
+  addressLine1 String
+  addressLine2 String?
+  city         String
+  region       String
+  postalCode   String
+  notes        String?
+
+  cancelledAt        DateTime?
+  cancellationReason String?
+  respondedAt        DateTime?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([businessId, startAt])
+  @@index([customerEmail])
+  @@index([status])
+  @@map("booking")
 }

@@ -27,6 +27,7 @@ function request(overrides: Partial<SlotRequest> = {}): SlotRequest {
     timezone: VANCOUVER,
     windows: NINE_TO_FIVE,
     closedDates: new Set(),
+    busy: [],
     durationMinutes: 60,
     bufferMinutes: 0,
     fromDate: "2026-08-03", // a Monday
@@ -126,6 +127,95 @@ describe("generateSlots", () => {
     const [day] = generateSlots(request({ windows }));
     const times = day!.slots.map((slot) => slot.getTime());
     expect(times).toEqual([...times].sort((a, b) => a - b));
+  });
+});
+
+describe("existing bookings", () => {
+  /** 11:00–12:00 local on Monday 3 August 2026 (PDT, UTC-7). */
+  const MIDDAY_BOOKING = {
+    start: new Date("2026-08-03T18:00:00Z"),
+    end: new Date("2026-08-03T19:00:00Z"),
+  };
+
+  it("removes every slot that would overlap a booking", () => {
+    const [day] = generateSlots(request({ busy: [MIDDAY_BOOKING] }));
+    const times = localTimes(day!.slots);
+
+    // A 60-minute service starting 10:15–11:45 would all run into it.
+    expect(times).toContain("10:00");
+    expect(times).not.toContain("10:15");
+    expect(times).not.toContain("11:00");
+    expect(times).not.toContain("11:45");
+    expect(times).toContain("12:00");
+  });
+
+  it("allows a slot that starts exactly when a booking ends", () => {
+    const [day] = generateSlots(
+      request({ busy: [MIDDAY_BOOKING], durationMinutes: 60 }),
+    );
+    expect(localTimes(day!.slots)).toContain("12:00");
+  });
+
+  it("allows a slot that ends exactly when a booking starts", () => {
+    const [day] = generateSlots(
+      request({ busy: [MIDDAY_BOOKING], durationMinutes: 60 }),
+    );
+    expect(localTimes(day!.slots)).toContain("10:00");
+  });
+
+  it("counts the buffer against existing bookings", () => {
+    const [day] = generateSlots(
+      request({
+        busy: [MIDDAY_BOOKING],
+        durationMinutes: 30,
+        bufferMinutes: 30,
+      }),
+    );
+    // 10:30 + 30min work + 30min buffer would run to 11:30, into the booking.
+    expect(localTimes(day!.slots)).not.toContain("10:30");
+    expect(localTimes(day!.slots)).toContain("10:00");
+  });
+
+  it("ignores bookings on other days", () => {
+    const days = generateSlots(request({ days: 2, busy: [MIDDAY_BOOKING] }));
+    expect(localTimes(days[1]!.slots)).toContain("11:00");
+  });
+
+  it("empties a day fully booked end to end", () => {
+    const [day] = generateSlots(
+      request({
+        busy: [
+          {
+            start: new Date("2026-08-03T16:00:00Z"), // 09:00 local
+            end: new Date("2026-08-03T24:00:00Z"), // 17:00 local
+          },
+        ],
+      }),
+    );
+    expect(day!.slots).toEqual([]);
+  });
+
+  it("handles unsorted and overlapping busy intervals", () => {
+    const [day] = generateSlots(
+      request({
+        busy: [
+          {
+            start: new Date("2026-08-03T22:00:00Z"),
+            end: new Date("2026-08-03T23:00:00Z"),
+          },
+          MIDDAY_BOOKING,
+          {
+            start: new Date("2026-08-03T18:30:00Z"),
+            end: new Date("2026-08-03T19:30:00Z"),
+          },
+        ],
+      }),
+    );
+    const times = localTimes(day!.slots);
+    expect(times).not.toContain("11:00");
+    expect(times).not.toContain("12:00");
+    expect(times).not.toContain("15:00");
+    expect(times).toContain("09:00");
   });
 });
 

@@ -55,4 +55,10 @@ export async function checkRateLimit({
 export const RATE_LIMITS = {
   /** Uploads cost storage and OCR CPU, so they are capped per user. */
   upload: { limit: 30, windowSeconds: 60 * 10 },
+  /**
+   * Booking submission is unauthenticated, so it is capped per client
+   * address. Generous enough for a household comparing providers, tight
+   * enough that filling a business's calendar takes real effort.
+   */
+  booking: { limit: 10, windowSeconds: 60 * 10 },
 } as const;

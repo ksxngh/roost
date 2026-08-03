@@ -5,10 +5,9 @@ run their business with. Homeowners find a licensed, insured pro and book
 them; the pro gets scheduling, quotes, invoicing, and a client list in the
 same account.
 
-> **Status:** Milestone 3 complete — providers can publish priced services,
-> set the hours they work, and the marketplace shows real bookable times.
-> Milestone 4 adds the booking flow itself. See
-> [docs/roadmap.md](docs/roadmap.md).
+> **Status:** Milestone 4 complete — customers can find a pro, pick a real
+> time, and book it; providers accept or decline from their schedule.
+> Milestone 5 adds payments. See [docs/roadmap.md](docs/roadmap.md).
 
 ## Stack
 
@@ -74,13 +73,16 @@ src/
     (auth)/       # Login, signup, password reset
     api/auth/     # Better Auth HTTP handler
     api/documents/# Verification-document upload and download
+    booking/      # Customer's booking confirmation, by reference
     browse/       # Public marketplace search
-    pro/[slug]/   # Public storefront
+    pro/[slug]/   # Public storefront and booking flow
     onboarding/   # Business creation
     page.tsx      # Marketing landing page
   components/
     auth/         # Auth forms and fields
     availability/ # Weekly hours, closures, booking rules, slot preview
+    booking/      # Customer slot picker and details form
+    schedule/     # Provider booking list with accept/decline
     services/     # Service package editor
     onboarding/   # Business creation form
     shell/        # App frame (sidebar, topbar, user menu)
@@ -88,7 +90,8 @@ src/
     ui/           # shadcn/ui primitives (generated, not hand-edited)
   lib/            # Config, env validation, validation schemas, utilities
   server/         # Framework-agnostic server code
-    businesses/   # Access, business service, packages, availability, documents
+    businesses/   # Access, business, packages, availability, bookings, documents
+    notifications/# Booking mail
     queue/        # Redis connection and BullMQ queues
     storage/      # Storage interface + local/S3 drivers
   test/           # Test setup and global setup
@@ -102,6 +105,7 @@ docs/             # Architecture, ADRs, roadmap, auth, database, storefront, tes
 - [Database](docs/database.md)
 - [Providers & storefronts](docs/storefront.md)
 - [Services & availability](docs/scheduling.md)
+- [Booking](docs/booking.md)
 - [Roadmap](docs/roadmap.md)
 - [Testing](docs/testing.md)
 - [Decision records](docs/adr/)

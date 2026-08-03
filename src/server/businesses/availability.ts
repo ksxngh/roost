@@ -1,3 +1,4 @@
+import { BookingStatus } from "@/generated/prisma/enums";
 import type {
   AvailabilityExceptionModel,
   BusinessHourModel,
@@ -30,6 +31,9 @@ export type OpeningWindow = {
   endMinute: number;
 };
 
+/** A span of time already committed, which cannot be offered again. */
+export type BusyInterval = { start: Date; end: Date };
+
 export type DayAvailability = {
   date: DateKey;
   weekday: number;
@@ -42,6 +46,10 @@ export type SlotRequest = {
   windows: OpeningWindow[];
   /** Dates the business is closed, as `YYYY-MM-DD`. */
   closedDates: ReadonlySet<DateKey>;
+  /** Existing bookings. A candidate slot overlapping any of these is not
+   *  offered — the database enforces the same rule, this avoids showing a
+   *  customer a time that would then be rejected. */
+  busy: readonly BusyInterval[];
   durationMinutes: number;
   bufferMinutes: number;
   /** First calendar day to consider, in the business's timezone. */
@@ -65,6 +73,7 @@ export type SlotRequest = {
  *   3. Wall-clock times that a daylight-saving jump skips are dropped rather
  *      than silently shifted to an hour that never happens.
  *   4. Anything sooner than the business's notice period is not offered.
+ *   5. Anything overlapping an existing booking is not offered.
  */
 export function generateSlots(request: SlotRequest): DayAvailability[] {
   const windowsByWeekday = new Map<number, OpeningWindow[]>();
@@ -79,7 +88,22 @@ export function generateSlots(request: SlotRequest): DayAvailability[] {
 
   const earliest = request.now.getTime() + request.leadHours * 3_600_000;
   const occupied = request.durationMinutes + request.bufferMinutes;
+  // Sorted once so the overlap check can stop early rather than scanning
+  // every booking for every candidate slot.
+  const busy = [...request.busy].sort(
+    (a, b) => a.start.getTime() - b.start.getTime(),
+  );
   const days: DayAvailability[] = [];
+
+  /** Half-open overlap: a slot may start exactly when another ends. */
+  function isFree(startMillis: number, endMillis: number): boolean {
+    for (const interval of busy) {
+      const busyStart = interval.start.getTime();
+      if (busyStart >= endMillis) break;
+      if (interval.end.getTime() > startMillis) return false;
+    }
+    return true;
+  }
 
   for (let offset = 0; offset < request.days; offset += 1) {
     const date = addDays(request.fromDate, offset);
@@ -99,7 +123,11 @@ export function generateSlots(request: SlotRequest): DayAvailability[] {
             request.timezone,
           );
           if (instant === null) continue;
-          if (instant.getTime() < earliest) continue;
+          const startMillis = instant.getTime();
+          if (startMillis < earliest) continue;
+          // The buffer is the provider's, not the customer's: it blocks the
+          // slot from being reused, so it counts against existing bookings.
+          if (!isFree(startMillis, startMillis + occupied * 60_000)) continue;
           slots.push(instant);
         }
       }
@@ -224,6 +252,7 @@ type AvailabilitySource = {
   bookingHorizonDays: number;
   hours: OpeningWindow[];
   closedDates: ReadonlySet<DateKey>;
+  busy: BusyInterval[];
 };
 
 function availabilityFor(
@@ -241,6 +270,7 @@ function availabilityFor(
     timezone: source.timezone,
     windows: source.hours,
     closedDates: source.closedDates,
+    busy: source.busy,
     durationMinutes: servicePackage.durationMinutes,
     bufferMinutes: servicePackage.bufferMinutes,
     // "Today" is the business's today, not the server's.
@@ -263,6 +293,16 @@ async function loadSource(
       bookingHorizonDays: true,
       hours: { select: { weekday: true, startMinute: true, endMinute: true } },
       availabilityExceptions: { select: { date: true } },
+      bookings: {
+        // The same statuses the database's exclusion constraint treats as
+        // occupying time. Kept in sync deliberately: if these disagree, the
+        // UI offers slots the insert then rejects.
+        where: {
+          status: { in: [BookingStatus.PENDING, BookingStatus.CONFIRMED] },
+          endAt: { gte: new Date() },
+        },
+        select: { startAt: true, endAt: true },
+      },
     },
   });
   if (!business) return null;
@@ -278,6 +318,10 @@ async function loadSource(
           utcMidnightToDateKey(exception.date),
         ),
       ),
+      busy: business.bookings.map((booking) => ({
+        start: booking.startAt,
+        end: booking.endAt,
+      })),
     },
   };
 }

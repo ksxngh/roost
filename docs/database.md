@@ -23,6 +23,8 @@ erDiagram
     business ||--o{ availability_exception : "closes on"
     service_category ||--o{ business_category : "offered via"
     service_category ||--o{ service_package : classifies
+    business ||--o{ booking : receives
+    service_package ||--o{ booking : "sold as"
 
     business {
         string id PK
@@ -66,6 +68,29 @@ erDiagram
         string businessId FK
         date date "whole-day closure"
         string note
+    }
+    booking {
+        string id PK
+        string reference UK "customer's handle; a bearer token"
+        string businessId FK
+        string packageId FK "soft link, SetNull"
+        string packageName "snapshot: prices change, history must not"
+        enum pricingModel
+        int priceCents
+        int durationMinutes
+        timestamptz startAt "timestamptz for the exclusion constraint"
+        timestamptz endAt
+        string timezone "snapshot of the business's zone"
+        enum status "PENDING CONFIRMED DECLINED CANCELLED COMPLETED"
+        string userId FK "nullable — guests may book"
+        string customerName
+        string customerEmail
+        string customerPhone
+        string addressLine1
+        string city
+        string region
+        string postalCode
+        string notes
     }
     business_member {
         string id PK
@@ -118,7 +143,13 @@ country)` on `service_area`, and `(businessId, date)` on
 `availability_exception` are unique, which is what makes re-adding the same
 city or closed day an idempotent no-op instead of an error.
 `(businessId, weekday, startMinute)` is unique on `business_hour` so a day
-cannot hold two windows that open at the same minute. `service_area` is additionally
+cannot hold two windows that open at the same minute.
+
+`booking` additionally carries an **exclusion constraint**, which is the only
+reason two customers cannot hold the same slot — see
+[booking.md](booking.md#double-booking-is-prevented-by-the-database). It is
+hand-written SQL appended to the generated migration, because Prisma cannot
+express it. `service_area` is additionally
 indexed on `(city, region, country)` — that index serves marketplace search.
 
 ### Authentication tables

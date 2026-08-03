@@ -11,8 +11,8 @@ begins.
 | 1   | Pivot & core domain              | Businesses, team seats, trades, service areas; rebrand; provider shell        | ✅ Done |
 | 2   | Provider onboarding & storefront | Business profile, coverage areas, licence/insurance upload, public storefront | ✅ Done |
 | 3   | Service packages & availability  | Fixed-price packages, business hours, real bookable slots                     | ✅ Done |
-| 4   | Marketplace & booking            | City/category search, listings, slot selection, booking creation              | Next    |
-| 5   | Payments                         | Stripe Connect onboarding, checkout, platform fee, payouts                    |         |
+| 4   | Marketplace & booking            | City/category search, listings, slot selection, booking creation              | ✅ Done |
+| 5   | Payments                         | Stripe Connect onboarding, checkout, platform fee, payouts                    | Next    |
 | 6   | Jobs & scheduling ops            | Job lifecycle, double-booking prevention, calendar                            |         |
 | 7   | Quotes & invoicing               | Estimate → approval → scheduled job → invoice                                 |         |
 | 8   | Client CRM                       | Auto-built client list, history, notes, addresses                             |         |
@@ -52,10 +52,11 @@ Deliberately deferred, tracked so it doesn't get lost:
   (Milestone 9).
 - **Document expiry** — `expiresAt` is stored but nothing acts on it. Expiry
   reminders and auto-suspension need the worker (Milestone 5).
-- **Booked time does not reduce availability** — slots come from hours minus
-  closures. Once jobs exist (Milestone 6), a booked slot must disappear from
-  the offered set; `generateSlots` takes the closed-day set that will carry
-  it.
+- **Customers cannot cancel their own booking** — only the business can, from
+  `/schedule`. A customer-side cancel needs a policy (how late is too late)
+  and, once money moves, a refund path — so it lands with payments.
+- **No booking reminders** — the mail is sent at request time only. Reminders
+  need the worker, which returns in Milestone 5.
 - **Split shifts have no editor** — the schema and slot generator support
   several windows per day, but the hours form edits one open/close pair and
   flattens anything else on save.

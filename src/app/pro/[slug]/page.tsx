@@ -4,6 +4,7 @@ import { notFound } from "next/navigation";
 import { BadgeCheck, Clock, Globe, Mail, MapPin, Phone } from "lucide-react";
 
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
 import {
   Card,
   CardContent,
@@ -148,15 +149,24 @@ export default async function StorefrontPublicPage({ params }: Params) {
                       {formatDuration(servicePackage.durationMinutes)}
                     </p>
                   </div>
-                  <p className="font-medium whitespace-nowrap">
-                    {servicePackage.pricingModel === "QUOTE"
-                      ? "Quoted on site"
-                      : `${formatPrice(servicePackage.priceCents ?? 0)}${
-                          servicePackage.pricingModel === "HOURLY"
-                            ? " / hr"
-                            : ""
-                        }`}
-                  </p>
+                  <div className="flex items-center gap-3 whitespace-nowrap">
+                    <p className="font-medium">
+                      {servicePackage.pricingModel === "QUOTE"
+                        ? "Quoted on site"
+                        : `${formatPrice(servicePackage.priceCents ?? 0)}${
+                            servicePackage.pricingModel === "HOURLY"
+                              ? " / hr"
+                              : ""
+                          }`}
+                    </p>
+                    <Button asChild size="sm" variant="outline">
+                      <Link
+                        href={`/pro/${business.slug}/book?service=${servicePackage.id}`}
+                      >
+                        Book
+                      </Link>
+                    </Button>
+                  </div>
                 </li>
               ))}
             </ul>
@@ -169,8 +179,8 @@ export default async function StorefrontPublicPage({ params }: Params) {
           <CardHeader>
             <CardTitle className="text-base">Next available</CardTitle>
             <CardDescription>
-              Times shown in {business.timezone.replace(/_/g, " ")}. Booking
-              opens with payments.
+              For {headline?.name}. Times shown in{" "}
+              {business.timezone.replace(/_/g, " ")}.
             </CardDescription>
           </CardHeader>
           <CardContent>
@@ -185,11 +195,13 @@ export default async function StorefrontPublicPage({ params }: Params) {
                   </p>
                   <ul className="mt-1 flex flex-wrap gap-1.5">
                     {day.times.map((time) => (
-                      <li
-                        key={time}
-                        className="bg-secondary text-secondary-foreground rounded px-2 py-0.5 text-xs"
-                      >
-                        {time}
+                      <li key={time}>
+                        <Link
+                          href={`/pro/${business.slug}/book?service=${headline?.id}`}
+                          className="bg-secondary text-secondary-foreground hover:bg-accent block rounded px-2 py-0.5 text-xs transition-colors"
+                        >
+                          {time}
+                        </Link>
                       </li>
                     ))}
                   </ul>

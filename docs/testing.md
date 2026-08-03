@@ -51,7 +51,7 @@ project already pinned; the vector extension is unused for now) and
 `redis:8-alpine`
 service containers via `TEST_DATABASE_URL` and `REDIS_URL`.
 
-## Current suite (449 tests)
+## Current suite (561 tests)
 
 | Area                                                    | Coverage                                                                                                                                                                                                                                                                  |
 | ------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
@@ -95,6 +95,10 @@ surface stops moving weekly.
   before `now + leadHours`, so a test using a fixed past date must pass a
   `now` earlier than it — otherwise every assertion passes vacuously against
   an empty list.
+- **Concurrency tests need real concurrency.** The double-booking test fires
+  eight `createBooking` calls with `Promise.allSettled` so all of them read
+  availability before any writes. Serialising them would pass against a
+  read-then-write implementation and prove nothing.
 - **Radix needs jsdom shims.** Pointer capture, `scrollIntoView`, and
   `ResizeObserver` are all polyfilled in `src/test/setup.ts`; without them
   Dialog and Select render nothing and fail in ways that do not name the
