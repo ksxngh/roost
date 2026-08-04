@@ -14,6 +14,10 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
+import {
+  AssignPicker,
+  type AssignableMember,
+} from "@/components/schedule/assign-picker";
 import { formatDuration, formatPrice } from "@/lib/validations/scheduling";
 import {
   cancelBookingAction,
@@ -43,6 +47,8 @@ export type ScheduleBooking = {
     amountCents: number;
     refundedCents: number;
   } | null;
+  assignedToId: string | null;
+  internalNote: string | null;
 };
 
 /** What the *provider* needs to know about the money. */
@@ -82,9 +88,12 @@ const STATUS_VARIANT = {
 export function BookingList({
   bookings,
   emptyMessage,
+  members = [],
 }: {
   bookings: ScheduleBooking[];
   emptyMessage: string;
+  /** Seats that can be given work; empty on a solo business. */
+  members?: AssignableMember[];
 }) {
   const router = useRouter();
   const [busyId, setBusyId] = useState<string | null>(null);
@@ -156,6 +165,21 @@ export function BookingList({
 
               {booking.notes ? (
                 <p className="bg-muted rounded-md px-3 py-2">{booking.notes}</p>
+              ) : null}
+
+              {booking.internalNote ? (
+                <p className="bg-muted/50 text-muted-foreground rounded-md px-3 py-2 text-xs">
+                  Internal: {booking.internalNote}
+                </p>
+              ) : null}
+
+              {booking.status === "PENDING" ||
+              booking.status === "CONFIRMED" ? (
+                <AssignPicker
+                  bookingId={booking.id}
+                  members={members}
+                  assignedToId={booking.assignedToId}
+                />
               ) : null}
 
               <div className="flex flex-wrap items-center gap-2">

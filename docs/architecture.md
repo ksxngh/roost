@@ -1,6 +1,6 @@
 # Architecture
 
-## Current state (after Milestone 5)
+## Current state (after Milestone 6)
 
 Roost is a single Next.js application backed by PostgreSQL, Redis, and an
 object store. The App Router serves three surfaces from one deployable: the
@@ -53,6 +53,10 @@ A third boundary joins them in Milestone 4: **the database owns
 non-overlap**. Two customers cannot hold the same slot because a Postgres
 exclusion constraint says so, not because application code checked first —
 see [booking.md](booking.md#double-booking-is-prevented-by-the-database).
+
+A fifth is the database session itself: **every connection runs in UTC**, or
+`timestamptz` values are stored offset by the server's zone in a way that
+round-trip tests cannot see ([operations.md](operations.md#timezones-and-the-database)).
 
 A fourth arrives with payments: **Stripe is authoritative about money**. A
 payment is only marked received when a signature-verified webhook says so —

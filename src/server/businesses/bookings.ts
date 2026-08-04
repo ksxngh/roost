@@ -324,3 +324,65 @@ export function completeBooking(
 ) {
   return transition(userId, businessId, bookingId, BookingStatus.COMPLETED);
 }
+
+/** Team members who can be given work, for the assignment picker. */
+export async function listAssignableMembers(
+  userId: string,
+  businessId: string,
+) {
+  await requireMembership(userId, businessId);
+  return prisma.businessMember.findMany({
+    where: { businessId },
+    select: {
+      id: true,
+      role: true,
+      user: { select: { name: true, email: true } },
+    },
+    orderBy: { createdAt: "asc" },
+  });
+}
+
+/**
+ * Give a booking to a team member, or take it back with `null`.
+ *
+ * The seat must belong to the same business: assigning work to someone
+ * else's employee would leak the customer's address into another business's
+ * schedule.
+ */
+export async function assignBooking(
+  userId: string,
+  businessId: string,
+  bookingId: string,
+  memberId: string | null,
+): Promise<void> {
+  await requireEditor(userId, businessId, "assign work");
+
+  if (memberId) {
+    const member = await prisma.businessMember.findFirst({
+      where: { id: memberId, businessId },
+      select: { id: true },
+    });
+    if (!member) throw new NotFoundError("team member");
+  }
+
+  const { count } = await prisma.booking.updateMany({
+    where: { id: bookingId, businessId },
+    data: { assignedToId: memberId },
+  });
+  if (count === 0) throw new NotFoundError("booking");
+}
+
+/** Notes the customer never sees. */
+export async function setInternalNote(
+  userId: string,
+  businessId: string,
+  bookingId: string,
+  note: string | null,
+): Promise<void> {
+  await requireEditor(userId, businessId, "annotate a booking");
+  const { count } = await prisma.booking.updateMany({
+    where: { id: bookingId, businessId },
+    data: { internalNote: note?.trim() || null },
+  });
+  if (count === 0) throw new NotFoundError("booking");
+}

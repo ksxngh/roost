@@ -92,6 +92,9 @@ erDiagram
         string region
         string postalCode
         string notes
+        string assignedToId FK "BusinessMember, SetNull"
+        string internalNote "never shown to the customer"
+        datetime reminderSentAt "idempotency marker for the reminder sweep"
     }
     payment {
         string id PK
@@ -249,7 +252,9 @@ Notes specific to Prisma 7:
 
 - Configuration lives in `prisma.config.ts`, not in `schema.prisma`'s
   datasource block; `DATABASE_URL` is read there via `dotenv`.
-- A **driver adapter is mandatory** — `src/server/db.ts` wires `@prisma/adapter-pg`.
+- A **driver adapter is mandatory** — `src/server/db.ts` wires `@prisma/adapter-pg`,
+  which also pins the session to UTC. That is load-bearing, not hygiene: see
+  [operations.md](operations.md#timezones-and-the-database).
 - The client generates into `src/generated/prisma` (gitignored, rebuilt by the
   `postinstall` script).
 

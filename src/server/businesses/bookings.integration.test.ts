@@ -24,13 +24,16 @@ import {
 import {
   InvalidTransitionError,
   SlotUnavailableError,
+  assignBooking,
   cancelBooking,
   completeBooking,
   confirmBooking,
   createBooking,
   declineBooking,
   getBookingByReference,
+  listAssignableMembers,
   listBookings,
+  setInternalNote,
 } from "@/server/businesses/bookings";
 import { createBusiness } from "@/server/businesses/businesses";
 import { createPackage } from "@/server/businesses/packages";
@@ -736,6 +739,140 @@ describe("listBookings", () => {
 
     await expect(
       listBookings(mine.user.id, theirs.business.id),
+    ).rejects.toBeInstanceOf(NotFoundError);
+  });
+});
+
+describe("assignment", () => {
+  async function teamBooking() {
+    const listed = await listedBusiness();
+    const colleague = await makeUser();
+    const seat = await prisma.businessMember.create({
+      data: {
+        businessId: listed.business.id,
+        userId: colleague.id,
+        role: BusinessRole.MEMBER,
+      },
+    });
+    const startAt = await firstSlot(
+      listed.business.slug,
+      listed.servicePackage.id,
+    );
+    const booking = await createBooking(
+      listed.business.slug,
+      {
+        ...CUSTOMER,
+        packageId: listed.servicePackage.id,
+        startAt: startAt.toISOString(),
+      },
+      { now: NOW },
+    );
+    return { ...listed, seat, booking };
+  }
+
+  it("lists the seats work can be given to", async () => {
+    const { user, business } = await teamBooking();
+    const members = await listAssignableMembers(user.id, business.id);
+    expect(members).toHaveLength(2);
+  });
+
+  it("assigns a booking to a team member", async () => {
+    const { user, business, booking, seat } = await teamBooking();
+
+    await assignBooking(user.id, business.id, booking.id, seat.id);
+
+    const stored = await prisma.booking.findUniqueOrThrow({
+      where: { id: booking.id },
+    });
+    expect(stored.assignedToId).toBe(seat.id);
+  });
+
+  it("unassigns with null", async () => {
+    const { user, business, booking, seat } = await teamBooking();
+    await assignBooking(user.id, business.id, booking.id, seat.id);
+
+    await assignBooking(user.id, business.id, booking.id, null);
+
+    const stored = await prisma.booking.findUniqueOrThrow({
+      where: { id: booking.id },
+    });
+    expect(stored.assignedToId).toBeNull();
+  });
+
+  it("refuses a seat from another business", async () => {
+    const mine = await teamBooking();
+    const theirs = await teamBooking();
+
+    await expect(
+      assignBooking(
+        mine.user.id,
+        mine.business.id,
+        mine.booking.id,
+        theirs.seat.id,
+      ),
+    ).rejects.toBeInstanceOf(NotFoundError);
+  });
+
+  it("refuses to assign another business's booking", async () => {
+    const mine = await teamBooking();
+    const theirs = await teamBooking();
+
+    await expect(
+      assignBooking(
+        mine.user.id,
+        mine.business.id,
+        theirs.booking.id,
+        mine.seat.id,
+      ),
+    ).rejects.toBeInstanceOf(NotFoundError);
+  });
+
+  it("refuses assignment by a MEMBER", async () => {
+    const { business, booking, seat } = await teamBooking();
+    const member = await prisma.businessMember.findFirstOrThrow({
+      where: { businessId: business.id, role: BusinessRole.MEMBER },
+      select: { userId: true },
+    });
+
+    await expect(
+      assignBooking(member.userId, business.id, booking.id, seat.id),
+    ).rejects.toBeInstanceOf(ForbiddenError);
+  });
+
+  it("keeps the booking when the assigned seat is deleted", async () => {
+    const { user, business, booking, seat } = await teamBooking();
+    await assignBooking(user.id, business.id, booking.id, seat.id);
+
+    await prisma.businessMember.delete({ where: { id: seat.id } });
+
+    const stored = await prisma.booking.findUniqueOrThrow({
+      where: { id: booking.id },
+    });
+    expect(stored.assignedToId).toBeNull();
+  });
+
+  it("stores and clears an internal note", async () => {
+    const { user, business, booking } = await teamBooking();
+
+    await setInternalNote(user.id, business.id, booking.id, "  Gate is stiff ");
+    expect(
+      (await prisma.booking.findUniqueOrThrow({ where: { id: booking.id } }))
+        .internalNote,
+    ).toBe("Gate is stiff");
+
+    await setInternalNote(user.id, business.id, booking.id, "   ");
+    expect(
+      (await prisma.booking.findUniqueOrThrow({ where: { id: booking.id } }))
+        .internalNote,
+    ).toBeNull();
+  });
+
+  it("refuses to annotate another business's booking", async () => {
+    const mine = await teamBooking();
+    const theirs = await teamBooking();
+
+    await expect(
+      setInternalNote(mine.user.id, mine.business.id, theirs.booking.id, "hi"),
     ).rejects.toBeInstanceOf(NotFoundError);
   });
 });

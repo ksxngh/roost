@@ -13,8 +13,8 @@ begins.
 | 3   | Service packages & availability  | Fixed-price packages, business hours, real bookable slots                     | ✅ Done |
 | 4   | Marketplace & booking            | City/category search, listings, slot selection, booking creation              | ✅ Done |
 | 5   | Payments                         | Stripe Connect onboarding, checkout, platform fee, payouts                    | ✅ Done |
-| 6   | Jobs & scheduling ops            | Calendar view, job assignment, day sheets                                     | Next    |
-| 7   | Quotes & invoicing               | Estimate → approval → scheduled job → invoice                                 |         |
+| 6   | Jobs & scheduling ops            | Calendar view, job assignment, day sheets, background worker                  | ✅ Done |
+| 7   | Quotes & invoicing               | Estimate → approval → scheduled job → invoice                                 | Next    |
 | 8   | Client CRM                       | Auto-built client list, history, notes, addresses                             |         |
 | 9   | Teams & permissions              | Seats, job assignment, granular permissions                                   |         |
 | 10  | Subscriptions                    | Pro/Premium tiers, feature gating, billing                                    |         |
@@ -40,9 +40,6 @@ Deliberately deferred, tracked so it doesn't get lost:
   in-memory limiter. Migrate in Milestone 11.
 - **Email verification enforcement** — verification mail is sent but sign-in
   is not blocked on it. Flip once a production email provider is configured.
-- **Background worker** — the BullMQ queue and Redis wiring are in place, but
-  the worker entry point is still absent. Booking reminders and document
-  expiry both need it; it returns in Milestone 6.
 - **Storage purge job** — soft-deleted records keep their stored objects.
 - **Verification review** — `submitForReview` sets `PENDING_REVIEW`; nothing
   can set `ACTIVE` yet. The admin queue that approves, rejects, and suspends
@@ -55,9 +52,9 @@ Deliberately deferred, tracked so it doesn't get lost:
 - **Customers cannot cancel their own booking** — only the business can, from
   `/schedule`. A customer-side cancel needs a policy (how late is too late)
   and, once money moves, a refund path — so it lands with payments.
-- **No booking reminders** — the mail is sent at request time only, and
-  nothing mails the customer when a booking is accepted or declined. Both
-  need the worker.
+- **No accept/decline mail** — the customer is mailed on request and 24 hours
+  before the job, but nothing tells them the moment a business accepts or
+  declines. The worker now exists, so this is small.
 - **Live Stripe keys** — everything is built and tested against a fake
   gateway plus real signature verification. Switching payments on needs
   Stripe keys, which only the account holder can create; see

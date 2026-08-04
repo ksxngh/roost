@@ -13,11 +13,13 @@ import {
 import {
   InvalidTransitionError,
   SlotUnavailableError,
+  assignBooking,
   cancelBooking,
   completeBooking,
   confirmBooking,
   createBooking,
   declineBooking,
+  setInternalNote,
 } from "@/server/businesses/bookings";
 import { sendBookingRequested } from "@/server/notifications/booking-mail";
 import {
@@ -193,5 +195,23 @@ export async function cancelBookingAction(bookingId: string, reason?: string) {
 export async function completeBookingAction(bookingId: string) {
   return providerMutation(async ({ userId, businessId }) => {
     await completeBooking(userId, businessId, bookingId);
+  });
+}
+
+export async function assignBookingAction(
+  bookingId: string,
+  memberId: string | null,
+) {
+  return providerMutation(async ({ userId, businessId }) => {
+    await assignBooking(userId, businessId, bookingId, memberId);
+  });
+}
+
+export async function setInternalNoteAction(bookingId: string, note: string) {
+  if (note.length > 1000) {
+    return invalid("Keep internal notes under 1000 characters.");
+  }
+  return providerMutation(async ({ userId, businessId }) => {
+    await setInternalNote(userId, businessId, bookingId, note);
   });
 }

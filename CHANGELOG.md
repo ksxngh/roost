@@ -4,6 +4,44 @@ All notable changes are documented here. Format follows
 [Keep a Changelog](https://keepachangelog.com/); versions follow semver
 (pre-1.0: minor = milestone).
 
+## [0.10.0] — 2026-08-04 · Milestone 6: Jobs & scheduling ops
+
+The provider's side of a booked job: seeing it, assigning it, and being
+reminded about it. The background worker returns.
+
+### Added
+
+- **Week calendar, day sheet, and list views** on `/schedule`, each linkable
+  by query string. Times are formatted server-side in the business's
+  timezone.
+- **Job assignment** to a team member, with the picker appearing only when
+  there is more than one seat. Assigning a seat from another business is
+  refused; deleting a seat unassigns its work rather than deleting it.
+- **Internal notes** on a booking — parking, equipment, warnings — shown to
+  the provider and never to the customer.
+- **Background worker** (`npm run worker`) with two recurring sweeps:
+  booking reminders 24 hours ahead, and licence/insurance expiry warnings 30
+  days ahead. Both are idempotent on a marker column written after the mail
+  is accepted, so a crash re-sends rather than silently swallowing.
+
+### Fixed
+
+- **`timestamptz` values were being stored offset by the database server's
+  timezone.** The driver sent naive wall-clock text and Postgres interpreted
+  it in its own zone; reads were distorted by the same amount, so a
+  write-then-read round trip agreed perfectly while the instant on disk was
+  wrong by seven hours. SQL comparisons against `now()` were wrong, and the
+  distortion changes size across a daylight-saving boundary, so rows written
+  in summer and winter would stop being comparable — including for
+  `booking_no_overlap`. The Prisma session is now pinned to UTC, with a
+  regression test that reads `extract(epoch)` rather than round-tripping.
+
+### Changed
+
+- The queue was still the study platform's document-processing queue. It is
+  now the jobs queue, with repeatable schedules installed idempotently on
+  worker boot.
+
 ## [0.9.0] — 2026-08-04 · Milestone 5: Payments
 
 Customers can pay by card at booking. Money goes to the provider's own Stripe

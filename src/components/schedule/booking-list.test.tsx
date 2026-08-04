@@ -53,6 +53,8 @@ const pending: ScheduleBooking = {
   address: "12 Elm St, Surrey, BC V3S 1A1",
   notes: "Gate code 4417",
   payment: null,
+  assignedToId: null,
+  internalNote: null,
 };
 
 beforeEach(() => {

@@ -169,6 +169,8 @@ model BusinessMember {
   user       User         @relation(fields: [userId], references: [id], onDelete: Cascade)
   role       BusinessRole @default(MEMBER)
 
+  assignments Booking[]
+
   createdAt DateTime @default(now())
 
   @@unique([businessId, userId])
@@ -257,6 +259,9 @@ model BusinessDocument {
   reviewedAt DateTime?
   /// Expiry printed on the certificate, when applicable.
   expiresAt  DateTime?
+
+  /// Set once the business has been warned this document is about to lapse.
+  expiryNoticeSentAt DateTime?
 
   uploadedById String?
   createdAt    DateTime @default(now())
@@ -404,6 +409,17 @@ model Booking {
   postalCode   String
   notes        String?
 
+  /// Which team member is doing the work. Null means "unassigned", which on
+  /// a solo business is the normal state.
+  assignedToId String?
+  assignedTo   BusinessMember? @relation(fields: [assignedToId], references: [id], onDelete: SetNull)
+  /// Free text the customer never sees: parking, equipment, warnings.
+  internalNote String?
+
+  /// Set once the pre-visit reminder has gone out. The reminder sweep is
+  /// idempotent on this, so a restarted worker cannot mail twice.
+  reminderSentAt DateTime?
+
   cancelledAt        DateTime?
   cancellationReason String?
   respondedAt        DateTime?
@@ -416,6 +432,7 @@ model Booking {
   @@index([businessId, startAt])
   @@index([customerEmail])
   @@index([status])
+  @@index([assignedToId])
   @@map("booking")
 }
 

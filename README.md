@@ -5,10 +5,9 @@ run their business with. Homeowners find a licensed, insured pro and book
 them; the pro gets scheduling, quotes, invoicing, and a client list in the
 same account.
 
-> **Status:** Milestone 5 complete — card payments via Stripe Connect, with a
-> platform fee and automatic refunds. Payments are optional: without Stripe
-> keys the app runs and bookings still work. Milestone 6 adds the calendar
-> and job assignment. See [docs/roadmap.md](docs/roadmap.md).
+> **Status:** Milestone 6 complete — week calendar, day sheets, job
+> assignment, and a background worker sending reminders. Milestone 7 adds
+> quotes and invoicing. See [docs/roadmap.md](docs/roadmap.md).
 
 ## Stack
 
@@ -55,6 +54,7 @@ promote one locally.
 | ----------------------- | ----------------------- |
 | `npm run dev`           | Dev server (Turbopack)  |
 | `npm run seed`          | Seed service categories |
+| `npm run worker`        | Background sweeps       |
 | `npm run build`         | Production build        |
 | `npm run test`          | Run the test suite once |
 | `npm run test:watch`    | Watch mode              |
@@ -85,7 +85,7 @@ src/
     availability/ # Weekly hours, closures, booking rules, slot preview
     booking/      # Customer slot picker and details form
     payments/     # Stripe Connect status card
-    schedule/     # Provider booking list with accept/decline
+    schedule/     # Calendar, day sheet, booking list, assignment
     services/     # Service package editor
     onboarding/   # Business creation form
     shell/        # App frame (sidebar, topbar, user menu)
@@ -98,6 +98,7 @@ src/
     payments/     # Stripe gateway, Connect, checkout, webhook handling
     queue/        # Redis connection and BullMQ queues
     storage/      # Storage interface + local/S3 drivers
+  worker/         # Background worker entry point
   test/           # Test setup and global setup
 docs/             # Architecture, ADRs, roadmap, auth, database, storefront, testing
 ```
@@ -111,6 +112,7 @@ docs/             # Architecture, ADRs, roadmap, auth, database, storefront, tes
 - [Services & availability](docs/scheduling.md)
 - [Booking](docs/booking.md)
 - [Payments](docs/payments.md)
+- [Running the work](docs/operations.md)
 - [Roadmap](docs/roadmap.md)
 - [Testing](docs/testing.md)
 - [Decision records](docs/adr/)
