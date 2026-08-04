@@ -51,7 +51,7 @@ project already pinned; the vector extension is unused for now) and
 `redis:8-alpine`
 service containers via `TEST_DATABASE_URL` and `REDIS_URL`.
 
-## Current suite (561 tests)
+## Current suite (635 tests)
 
 | Area                                                    | Coverage                                                                                                                                                                                                                                                                  |
 | ------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
@@ -99,6 +99,11 @@ surface stops moving weekly.
   eight `createBooking` calls with `Promise.allSettled` so all of them read
   availability before any writes. Serialising them would pass against a
   read-then-write implementation and prove nothing.
+- **Stripe is faked, not stubbed away.** Payment logic runs against a
+  `StripeGateway` fake that records its arguments, so what we _send_ Stripe is
+  asserted. Signature verification is the exception: those tests build real
+  HMAC headers and run the actual SDK verification, because that is the part
+  an attacker would target.
 - **Radix needs jsdom shims.** Pointer capture, `scrollIntoView`, and
   `ResizeObserver` are all polyfilled in `src/test/setup.ts`; without them
   Dialog and Select render nothing and fail in ways that do not name the

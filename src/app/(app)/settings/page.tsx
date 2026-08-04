@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
-import { BadgeCheck, CircleAlert } from "lucide-react";
+import Link from "next/link";
+import { BadgeCheck, ChevronRight, CircleAlert } from "lucide-react";
 
 import { PageHeader } from "@/components/page-header";
 import {
@@ -9,6 +10,7 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
+import { settingsSections } from "@/lib/site-config";
 import { requireSession } from "@/server/session";
 
 export const metadata: Metadata = { title: "Settings" };
@@ -53,12 +55,33 @@ export default async function SettingsPage() {
           </dl>
         </CardContent>
       </Card>
+      <ul className="space-y-3">
+        {settingsSections.map((section) => (
+          <li key={section.href}>
+            <Link href={section.href} className="block">
+              <Card className="hover:border-foreground/20 transition-colors">
+                <CardHeader>
+                  <CardTitle className="flex items-center justify-between gap-2 text-base">
+                    {section.title}
+                    <ChevronRight
+                      className="text-muted-foreground size-4"
+                      aria-hidden
+                    />
+                  </CardTitle>
+                  <CardDescription>{section.description}</CardDescription>
+                </CardHeader>
+              </Card>
+            </Link>
+          </li>
+        ))}
+      </ul>
+
       <Card>
         <CardHeader>
           <CardTitle>Appearance</CardTitle>
           <CardDescription>
             Theme can be switched from the toggle in the top bar. Notification
-            and billing settings arrive with the subscription system.
+            and subscription settings arrive with the subscription system.
           </CardDescription>
         </CardHeader>
       </Card>

@@ -37,7 +37,31 @@ export type ScheduleBooking = {
   customerEmail: string;
   address: string;
   notes: string | null;
+  /** Null when the booking was never taken online. */
+  payment: {
+    status: "PENDING" | "SUCCEEDED" | "FAILED" | "REFUNDED";
+    amountCents: number;
+    refundedCents: number;
+  } | null;
 };
+
+/** What the *provider* needs to know about the money. */
+const PAYMENT_COPY = {
+  PENDING: (p: { amountCents: number }) =>
+    `${formatPrice(p.amountCents)} not yet paid`,
+  SUCCEEDED: (p: { amountCents: number }) =>
+    `${formatPrice(p.amountCents)} paid`,
+  FAILED: () => "Payment failed",
+  REFUNDED: (p: { amountCents: number; refundedCents: number }) =>
+    `${formatPrice(p.refundedCents || p.amountCents)} refunded`,
+} as const;
+
+const PAYMENT_VARIANT = {
+  PENDING: "secondary",
+  SUCCEEDED: "outline",
+  FAILED: "destructive",
+  REFUNDED: "outline",
+} as const;
 
 const STATUS_LABEL = {
   PENDING: "Needs a reply",
@@ -134,9 +158,16 @@ export function BookingList({
                 <p className="bg-muted rounded-md px-3 py-2">{booking.notes}</p>
               ) : null}
 
-              <p className="text-muted-foreground font-mono text-xs">
-                {booking.reference}
-              </p>
+              <div className="flex flex-wrap items-center gap-2">
+                <p className="text-muted-foreground font-mono text-xs">
+                  {booking.reference}
+                </p>
+                {booking.payment ? (
+                  <Badge variant={PAYMENT_VARIANT[booking.payment.status]}>
+                    {PAYMENT_COPY[booking.payment.status](booking.payment)}
+                  </Badge>
+                ) : null}
+              </div>
 
               {booking.status === "PENDING" ? (
                 <div className="flex flex-wrap gap-2">

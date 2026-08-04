@@ -1,6 +1,6 @@
 # Architecture
 
-## Current state (after Milestone 4)
+## Current state (after Milestone 5)
 
 Roost is a single Next.js application backed by PostgreSQL, Redis, and an
 object store. The App Router serves three surfaces from one deployable: the
@@ -54,6 +54,11 @@ non-overlap**. Two customers cannot hold the same slot because a Postgres
 exclusion constraint says so, not because application code checked first —
 see [booking.md](booking.md#double-booking-is-prevented-by-the-database).
 
+A fourth arrives with payments: **Stripe is authoritative about money**. A
+payment is only marked received when a signature-verified webhook says so —
+never because a browser came back from checkout. See
+[payments.md](payments.md).
+
 ## Target architecture
 
 The end-state the milestones build toward:
@@ -70,8 +75,8 @@ flowchart TB
     W --> DB
     W --> S3
     W --> MAIL["Email / SMS\nreminders, receipts"]
-    FE --> STRIPE["Stripe Connect\ncheckout + payouts"]
-    STRIPE -->|webhooks| FE
+    FE --> STRIPE["Stripe Connect\nhosted checkout + payouts"]
+    STRIPE -->|signed webhooks| FE
 ```
 
 Key properties:
@@ -82,9 +87,10 @@ Key properties:
   by separate worker processes sharing the same codebase and Prisma client.
 - **Postgres is the source of truth.** Redis is disposable: cache, queues,
   rate-limit counters.
-- **Money moves through Stripe Connect**, never through our own ledger:
-  customers pay the platform, the platform pays out to the provider's
-  connected account, and webhooks are the authority on what settled.
+- **Money moves through Stripe Connect**, never through our own ledger.
+  Charges are created _on_ the provider's connected account with an
+  application fee, so Roost never takes custody of funds, and webhooks are
+  the authority on what settled.
 
 ## Design system
 

@@ -25,6 +25,7 @@ erDiagram
     service_category ||--o{ service_package : classifies
     business ||--o{ booking : receives
     service_package ||--o{ booking : "sold as"
+    booking ||--o| payment : "paid by"
 
     business {
         string id PK
@@ -91,6 +92,24 @@ erDiagram
         string region
         string postalCode
         string notes
+    }
+    payment {
+        string id PK
+        string bookingId UK "one payment per booking"
+        string stripeCheckoutSessionId UK
+        string stripePaymentIntentId UK
+        string stripeAccountId "the connected account"
+        int amountCents "integer cents, always"
+        int platformFeeCents
+        string currency
+        enum status "PENDING SUCCEEDED FAILED REFUNDED"
+        int refundedCents
+        datetime paidAt
+    }
+    stripe_webhook_event {
+        string id PK "Stripe's event id; the insert is the idempotency lock"
+        string type
+        datetime processedAt
     }
     business_member {
         string id PK

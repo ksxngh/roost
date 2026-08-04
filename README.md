@@ -5,9 +5,10 @@ run their business with. Homeowners find a licensed, insured pro and book
 them; the pro gets scheduling, quotes, invoicing, and a client list in the
 same account.
 
-> **Status:** Milestone 4 complete — customers can find a pro, pick a real
-> time, and book it; providers accept or decline from their schedule.
-> Milestone 5 adds payments. See [docs/roadmap.md](docs/roadmap.md).
+> **Status:** Milestone 5 complete — card payments via Stripe Connect, with a
+> platform fee and automatic refunds. Payments are optional: without Stripe
+> keys the app runs and bookings still work. Milestone 6 adds the calendar
+> and job assignment. See [docs/roadmap.md](docs/roadmap.md).
 
 ## Stack
 
@@ -73,6 +74,7 @@ src/
     (auth)/       # Login, signup, password reset
     api/auth/     # Better Auth HTTP handler
     api/documents/# Verification-document upload and download
+    api/stripe/   # Signed Stripe webhook
     booking/      # Customer's booking confirmation, by reference
     browse/       # Public marketplace search
     pro/[slug]/   # Public storefront and booking flow
@@ -82,6 +84,7 @@ src/
     auth/         # Auth forms and fields
     availability/ # Weekly hours, closures, booking rules, slot preview
     booking/      # Customer slot picker and details form
+    payments/     # Stripe Connect status card
     schedule/     # Provider booking list with accept/decline
     services/     # Service package editor
     onboarding/   # Business creation form
@@ -92,6 +95,7 @@ src/
   server/         # Framework-agnostic server code
     businesses/   # Access, business, packages, availability, bookings, documents
     notifications/# Booking mail
+    payments/     # Stripe gateway, Connect, checkout, webhook handling
     queue/        # Redis connection and BullMQ queues
     storage/      # Storage interface + local/S3 drivers
   test/           # Test setup and global setup
@@ -106,6 +110,7 @@ docs/             # Architecture, ADRs, roadmap, auth, database, storefront, tes
 - [Providers & storefronts](docs/storefront.md)
 - [Services & availability](docs/scheduling.md)
 - [Booking](docs/booking.md)
+- [Payments](docs/payments.md)
 - [Roadmap](docs/roadmap.md)
 - [Testing](docs/testing.md)
 - [Decision records](docs/adr/)

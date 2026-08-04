@@ -66,12 +66,15 @@ export function BookingFlow({
   timezone,
   service,
   days,
+  payable = false,
 }: {
   slug: string;
   businessName: string;
   timezone: string;
   service: BookableService;
   days: BookableDay[];
+  /** Whether this booking continues to Stripe checkout after submitting. */
+  payable?: boolean;
 }) {
   const router = useRouter();
   const [selected, setSelected] = useState<{
@@ -115,7 +118,12 @@ export function BookingFlow({
       });
 
       if (result.ok) {
-        router.push(`/booking/${result.data.reference}`);
+        // Stripe's hosted checkout is a full navigation, not a route change.
+        if (result.data.checkoutUrl) {
+          window.location.assign(result.data.checkoutUrl);
+        } else {
+          router.push(`/booking/${result.data.reference}`);
+        }
       } else {
         setError(result.error);
       }
@@ -310,7 +318,11 @@ export function BookingFlow({
 
               <div className="flex flex-wrap items-center gap-3">
                 <Button type="submit" disabled={pending}>
-                  {pending ? "Requesting…" : "Request booking"}
+                  {pending
+                    ? "Requesting…"
+                    : payable
+                      ? "Continue to payment"
+                      : "Request booking"}
                 </Button>
                 <Button
                   type="button"

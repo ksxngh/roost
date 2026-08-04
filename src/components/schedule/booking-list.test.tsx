@@ -52,6 +52,7 @@ const pending: ScheduleBooking = {
   customerEmail: "dana@example.com",
   address: "12 Elm St, Surrey, BC V3S 1A1",
   notes: "Gate code 4417",
+  payment: null,
 };
 
 beforeEach(() => {

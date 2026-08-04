@@ -281,8 +281,14 @@ function availabilityFor(
   });
 }
 
+/**
+ * `now` is threaded in rather than read here: slot generation and the
+ * already-booked filter must agree on what "now" is, or availability will
+ * offer a slot the constraint then rejects.
+ */
 async function loadSource(
   where: Record<string, unknown>,
+  now: Date,
 ): Promise<{ id: string; source: AvailabilitySource } | null> {
   const business = await prisma.business.findFirst({
     where,
@@ -299,7 +305,7 @@ async function loadSource(
         // UI offers slots the insert then rejects.
         where: {
           status: { in: [BookingStatus.PENDING, BookingStatus.CONFIRMED] },
-          endAt: { gte: new Date() },
+          endAt: { gte: now },
         },
         select: { startAt: true, endAt: true },
       },
@@ -334,8 +340,9 @@ export async function previewAvailability(
   options: { days?: number; now?: Date } = {},
 ): Promise<DayAvailability[]> {
   await requireMembership(userId, businessId);
+  const now = options.now ?? new Date();
   const [loaded, servicePackage] = await Promise.all([
-    loadSource({ id: businessId }),
+    loadSource({ id: businessId }, now),
     prisma.servicePackage.findFirst({
       where: { id: packageId, businessId },
       select: { durationMinutes: true, bufferMinutes: true },
@@ -343,7 +350,7 @@ export async function previewAvailability(
   ]);
   if (!loaded) throw new NotFoundError();
   if (!servicePackage) throw new NotFoundError("service");
-  return availabilityFor(loaded.source, servicePackage, options);
+  return availabilityFor(loaded.source, servicePackage, { ...options, now });
 }
 
 /**
@@ -359,7 +366,8 @@ export async function publicAvailability(
   packageId: string,
   options: { days?: number; now?: Date } = {},
 ): Promise<DayAvailability[] | null> {
-  const loaded = await loadSource({ slug, status: "ACTIVE" });
+  const now = options.now ?? new Date();
+  const loaded = await loadSource({ slug, status: "ACTIVE" }, now);
   if (!loaded) return null;
 
   const servicePackage = await prisma.servicePackage.findFirst({
@@ -367,5 +375,5 @@ export async function publicAvailability(
     select: { durationMinutes: true, bufferMinutes: true },
   });
   if (!servicePackage) return null;
-  return availabilityFor(loaded.source, servicePackage, options);
+  return availabilityFor(loaded.source, servicePackage, { ...options, now });
 }

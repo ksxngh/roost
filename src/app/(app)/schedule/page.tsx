@@ -50,6 +50,13 @@ export default async function SchedulePage() {
       .filter(Boolean)
       .join(", "),
     notes: booking.notes,
+    payment: booking.payment
+      ? {
+          status: booking.payment.status,
+          amountCents: booking.payment.amountCents,
+          refundedCents: booking.payment.refundedCents,
+        }
+      : null,
   });
 
   const pending = bookings

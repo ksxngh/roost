@@ -127,6 +127,14 @@ model Business {
   /// Expiry of the insurance certificate on file; drives re-verification.
   insuredUntil DateTime?
 
+  /// Connected Stripe account (Express). Null until the owner starts
+  /// onboarding; the three flags mirror Stripe and are only ever written from
+  /// a verified webhook or an explicit refresh.
+  stripeAccountId        String? @unique
+  stripeChargesEnabled   Boolean @default(false)
+  stripePayoutsEnabled   Boolean @default(false)
+  stripeDetailsSubmitted Boolean @default(false)
+
   /// IANA zone. Opening hours are wall-clock times in this zone, so every
   /// instant shown to a customer is derived from it.
   timezone           String @default("America/Vancouver")
@@ -367,10 +375,14 @@ model Booking {
   priceCents      Int?
   durationMinutes Int
 
-  startAt  DateTime
+  /// Stored WITH a zone. These are instants, and `booking_no_overlap` builds
+  /// a `tstzrange` over them — over a zone-less `timestamp` that expression
+  /// is not immutable and Postgres refuses to index it. Removing these
+  /// attributes silently drops the double-booking guarantee.
+  startAt  DateTime @db.Timestamptz(3)
   /// Always `startAt + durationMinutes`; stored so the database can enforce
   /// non-overlap without recomputing it.
-  endAt    DateTime
+  endAt    DateTime @db.Timestamptz(3)
   /// The business's timezone when booked, so the time can be redisplayed
   /// exactly as the customer saw it.
   timezone String
@@ -396,6 +408,8 @@ model Booking {
   cancellationReason String?
   respondedAt        DateTime?
 
+  payment Payment?
+
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
@@ -403,4 +417,65 @@ model Booking {
   @@index([customerEmail])
   @@index([status])
   @@map("booking")
+}
+
+enum PaymentStatus {
+  /// Checkout session created; the customer has not finished paying.
+  PENDING
+  /// Stripe confirmed the funds. The only status that means money moved.
+  SUCCEEDED
+  /// The customer's payment failed or they abandoned checkout.
+  FAILED
+  /// Money returned, in full or in part. `refundedCents` says how much.
+  REFUNDED
+}
+
+/// Money for one booking.
+///
+/// Amounts are copied from the booking at checkout: a business repricing a
+/// service must not change what was actually charged. Stripe remains the
+/// source of truth for whether funds moved — every status change here is
+/// driven by a verified webhook, never by the browser returning from
+/// checkout.
+model Payment {
+  id        String  @id @default(cuid())
+  bookingId String  @unique
+  booking   Booking @relation(fields: [bookingId], references: [id], onDelete: Cascade)
+
+  /// Set before redirecting the customer; unique so a retry cannot duplicate.
+  stripeCheckoutSessionId String  @unique
+  stripePaymentIntentId   String? @unique
+  /// The connected account the funds settle into.
+  stripeAccountId         String
+
+  /// What the customer is charged, in the smallest currency unit.
+  amountCents      Int
+  /// Roost's cut, taken from `amountCents` via Stripe's application fee.
+  platformFeeCents Int
+  currency         String @default("cad")
+
+  status        PaymentStatus @default(PENDING)
+  refundedCents Int           @default(0)
+  failureReason String?
+  paidAt        DateTime?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([status])
+  @@map("payment")
+}
+
+/// Every Stripe event we have already handled.
+///
+/// Stripe retries deliveries and does not promise exactly-once, so the event
+/// id is the primary key and insertion is the idempotency check: a duplicate
+/// delivery collides and is skipped rather than refunding twice.
+model StripeWebhookEvent {
+  /// Stripe's own event id (`evt_…`).
+  id          String   @id
+  type        String
+  processedAt DateTime @default(now())
+
+  @@map("stripe_webhook_event")
 }

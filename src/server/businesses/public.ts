@@ -27,6 +27,9 @@ export async function getPublicStorefront(slug: string) {
       slug: true,
       name: true,
       timezone: true,
+      // Whether this storefront can take money, so the booking page can say
+      // so before the customer fills anything in.
+      stripeChargesEnabled: true,
       tagline: true,
       about: true,
       phone: true,

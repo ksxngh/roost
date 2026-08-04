@@ -5,8 +5,10 @@ import { ArrowLeft } from "lucide-react";
 
 import { BookingFlow } from "@/components/booking/booking-flow";
 import { formatMinutes, wallTimeAt } from "@/lib/time";
+import { isChargeable } from "@/lib/validations/payment";
 import { publicAvailability } from "@/server/businesses/availability";
 import { getPublicStorefront } from "@/server/businesses/public";
+import { paymentsConfigured } from "@/server/payments/stripe";
 
 export const metadata: Metadata = { title: "Book" };
 
@@ -53,6 +55,14 @@ export default async function BookPage({
         slug={slug}
         businessName={business.name}
         timezone={business.timezone}
+        payable={
+          paymentsConfigured() &&
+          isChargeable({
+            pricingModel: service.pricingModel,
+            priceCents: service.priceCents,
+            chargesEnabled: business.stripeChargesEnabled,
+          })
+        }
         service={{
           id: service.id,
           name: service.name,

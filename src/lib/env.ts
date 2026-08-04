@@ -42,6 +42,23 @@ const serverSchema = z.object({
 
   /** Hard ceiling on a single upload, in megabytes. */
   MAX_UPLOAD_MB: z.coerce.number().int().positive().max(200).default(25),
+
+  // Payments. All three are optional so the app runs without a Stripe
+  // account; taking payment is gated on them being present rather than the
+  // app refusing to boot. See docs/payments.md.
+  STRIPE_SECRET_KEY: z.string().min(1).optional(),
+  /** Required to verify webhook signatures; without it events are refused. */
+  STRIPE_WEBHOOK_SECRET: z.string().min(1).optional(),
+  /**
+   * Roost's cut, in basis points (1000 = 10%). Applied to the service price
+   * as a Stripe application fee on the connected account's charge.
+   */
+  PLATFORM_FEE_BPS: z.coerce
+    .number()
+    .int()
+    .min(0)
+    .max(3000, "a fee above 30% is almost certainly a typo")
+    .default(1000),
 });
 
 const clientSchema = z.object({

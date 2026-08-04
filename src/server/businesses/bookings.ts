@@ -1,6 +1,10 @@
 import { randomBytes } from "node:crypto";
 
-import { BookingStatus, BusinessStatus } from "@/generated/prisma/enums";
+import {
+  BookingStatus,
+  BusinessStatus,
+  type PaymentStatus,
+} from "@/generated/prisma/enums";
 import type { BookingModel } from "@/generated/prisma/models";
 import { dateKeyAt } from "@/lib/time";
 import {
@@ -183,6 +187,15 @@ export async function getBookingByReference(reference: string) {
       postalCode: true,
       notes: true,
       cancellationReason: true,
+      // Enough to tell the customer whether they have paid; never the Stripe
+      // identifiers, which belong only to the server and the dashboard.
+      payment: {
+        select: {
+          status: true,
+          amountCents: true,
+          refundedCents: true,
+        },
+      },
       business: {
         select: { name: true, slug: true, phone: true, email: true },
       },
@@ -192,11 +205,19 @@ export async function getBookingByReference(reference: string) {
 
 // ── Provider side ────────────────────────────────────────────────────────
 
+export type BookingWithPayment = BookingModel & {
+  payment: {
+    status: PaymentStatus;
+    amountCents: number;
+    refundedCents: number;
+  } | null;
+};
+
 export async function listBookings(
   userId: string,
   businessId: string,
   options: { from?: Date; statuses?: BookingStatus[] } = {},
-): Promise<BookingModel[]> {
+): Promise<BookingWithPayment[]> {
   await requireMembership(userId, businessId);
   return prisma.booking.findMany({
     where: {
@@ -205,6 +226,11 @@ export async function listBookings(
       ...(options.statuses ? { status: { in: options.statuses } } : {}),
     },
     orderBy: { startAt: "asc" },
+    include: {
+      payment: {
+        select: { status: true, amountCents: true, refundedCents: true },
+      },
+    },
   });
 }
 

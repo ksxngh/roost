@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { CalendarCheck, Clock, MapPin } from "lucide-react";
+import { Banknote, CalendarCheck, Clock, MapPin } from "lucide-react";
 
 import { Badge } from "@/components/ui/badge";
 import {
@@ -22,6 +22,18 @@ export const metadata: Metadata = {
   // A reference is a bearer token for the booking's details; keep it out of
   // search results.
   robots: { index: false, follow: false },
+};
+
+/** What the customer should understand about their money. */
+const PAYMENT_COPY: Record<
+  "PENDING" | "SUCCEEDED" | "FAILED" | "REFUNDED",
+  (payment: { amountCents: number; refundedCents: number }) => string
+> = {
+  PENDING: () => "Payment not completed.",
+  SUCCEEDED: (payment) => `Paid ${formatPrice(payment.amountCents)}.`,
+  FAILED: () => "Payment failed — the business will be in touch.",
+  REFUNDED: (payment) =>
+    `Refunded ${formatPrice(payment.refundedCents || payment.amountCents)}.`,
 };
 
 const STATUS = {
@@ -124,6 +136,16 @@ export default async function BookingPage({
               {booking.city}, {booking.region} {booking.postalCode}
             </span>
           </p>
+
+          {booking.payment ? (
+            <p className="flex items-center gap-2">
+              <Banknote
+                className="text-muted-foreground size-4 shrink-0"
+                aria-hidden
+              />
+              {PAYMENT_COPY[booking.payment.status](booking.payment)}
+            </p>
+          ) : null}
 
           {booking.notes ? (
             <p className="text-muted-foreground border-t pt-3">

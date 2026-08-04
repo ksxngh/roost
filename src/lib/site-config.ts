@@ -73,3 +73,12 @@ export const businessNav: NavItem[] = [
 export const settingsNav: NavItem[] = [
   { title: "Settings", href: "/settings", icon: Settings, segment: "settings" },
 ];
+
+/** Sub-pages of Settings, listed on the settings index. */
+export const settingsSections = [
+  {
+    title: "Payments",
+    href: "/settings/payments",
+    description: "Connect Stripe and see where booking money goes.",
+  },
+] as const;

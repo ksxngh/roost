@@ -20,6 +20,12 @@ import {
   declineBooking,
 } from "@/server/businesses/bookings";
 import { sendBookingRequested } from "@/server/notifications/booking-mail";
+import {
+  PaymentNotRequiredError,
+  createCheckoutForBooking,
+  refundBookingPayment,
+} from "@/server/payments/checkout";
+import { paymentsConfigured } from "@/server/payments/stripe";
 import { RATE_LIMITS, checkRateLimit } from "@/server/rate-limit";
 import { getSession } from "@/server/session";
 
@@ -83,7 +89,26 @@ export async function createBookingAction(slug: string, input: unknown) {
       console.error("[booking] notification failed:", error);
     });
 
-    return { ok: true as const, data: { reference: booking.reference } };
+    // A booking that can be paid for online goes to Stripe next; one that
+    // cannot (quote-priced work, or a business without Stripe) is simply
+    // confirmed as a request. Checkout failing must not lose the booking —
+    // it already exists and the provider can still see it.
+    let checkoutUrl: string | null = null;
+    if (paymentsConfigured()) {
+      try {
+        const checkout = await createCheckoutForBooking(booking.id);
+        checkoutUrl = checkout.url;
+      } catch (error) {
+        if (!(error instanceof PaymentNotRequiredError)) {
+          console.error("[booking] checkout could not be started:", error);
+        }
+      }
+    }
+
+    return {
+      ok: true as const,
+      data: { reference: booking.reference, checkoutUrl },
+    };
   } catch (error) {
     if (
       error instanceof SlotUnavailableError ||
@@ -135,15 +160,33 @@ export async function confirmBookingAction(bookingId: string) {
   });
 }
 
+/**
+ * Refund after a booking is called off.
+ *
+ * Deliberately after the status change and deliberately non-fatal: the
+ * customer must not stay booked because Stripe was briefly unreachable. A
+ * refund that fails here is logged and left for `charge.refunded` or a human.
+ */
+async function refundQuietly(bookingId: string): Promise<void> {
+  if (!paymentsConfigured()) return;
+  try {
+    await refundBookingPayment(bookingId);
+  } catch (error) {
+    console.error("[booking] refund failed:", error);
+  }
+}
+
 export async function declineBookingAction(bookingId: string, reason?: string) {
   return providerMutation(async ({ userId, businessId }) => {
     await declineBooking(userId, businessId, bookingId, reason?.trim() || null);
+    await refundQuietly(bookingId);
   });
 }
 
 export async function cancelBookingAction(bookingId: string, reason?: string) {
   return providerMutation(async ({ userId, businessId }) => {
     await cancelBooking(userId, businessId, bookingId, reason?.trim() || null);
+    await refundQuietly(bookingId);
   });
 }
 

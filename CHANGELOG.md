@@ -4,6 +4,50 @@ All notable changes are documented here. Format follows
 [Keep a Changelog](https://keepachangelog.com/); versions follow semver
 (pre-1.0: minor = milestone).
 
+## [0.9.0] — 2026-08-04 · Milestone 5: Payments
+
+Customers can pay by card at booking. Money goes to the provider's own Stripe
+account; Roost takes a platform fee. Payments are optional — with no Stripe
+keys the app runs exactly as before.
+
+### Added
+
+- **Stripe Connect onboarding** (`/settings/payments`): owner-only, with a
+  live capability checklist mirrored from Stripe.
+- **Hosted Checkout at booking** for fixed-price services on a connected
+  account. Card details never touch our origin.
+- **Platform fee** via Stripe's application fee, configurable through
+  `PLATFORM_FEE_BPS` (default 10%), rounded down so rounding never costs the
+  provider more than the stated rate.
+- **Signed webhook endpoint** (`/api/stripe/webhook`) handling checkout
+  completion, expiry, failure, refunds, and account updates.
+- **Automatic full refund** when a paid booking is declined or cancelled,
+  including the platform fee.
+- Payment status on both the customer's booking page and the provider's
+  schedule.
+- 74 new tests, including real HMAC signature verification against forged
+  signatures, tampered bodies, and out-of-tolerance replays.
+
+### Fixed
+
+- **`Booking.startAt`/`endAt` had lost their `@db.Timestamptz(3)` attributes
+  in the schema** while the database still had the right type. The next
+  generated migration would have reverted the columns to a zone-less
+  `timestamp` and broken the exclusion constraint that prevents double
+  booking. Restored, with a comment explaining why they must stay.
+- Availability read already-booked time using the wall clock while generating
+  slots from an injected `now`. The two now share one clock; previously any
+  time-travelling caller got inconsistent answers.
+
+### Security
+
+- A payment is only marked received on a signature-verified webhook, never
+  because a browser returned from checkout.
+- Webhook delivery, checkout creation, and refunds are each idempotent —
+  Stripe retries and does not promise exactly-once delivery.
+- The webhook returns `503` when unconfigured rather than a misleading `200`.
+- Connecting a payout account is owner-only.
+
 ## [0.8.0] — 2026-08-02 · Milestone 4: Marketplace & booking
 
 The marketplace works end to end: a customer finds a pro, picks a real time,
