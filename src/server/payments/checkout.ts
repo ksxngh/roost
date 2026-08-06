@@ -1,9 +1,14 @@
-import { PaymentStatus } from "@/generated/prisma/enums";
+import { InvoiceStatus, PaymentStatus } from "@/generated/prisma/enums";
 import type { PaymentModel } from "@/generated/prisma/models";
 import { serverEnv } from "@/lib/env";
 import { siteConfig } from "@/lib/site-config";
 import { formatDuration } from "@/lib/validations/scheduling";
-import { isChargeable, platformFeeCents } from "@/lib/validations/payment";
+import {
+  MIN_CHARGE_CENTS,
+  isChargeable,
+  platformFeeCents,
+} from "@/lib/validations/payment";
+import { balanceCents } from "@/lib/money";
 import { NotFoundError } from "@/server/businesses/access";
 import { prisma } from "@/server/db";
 import { type StripeGateway, stripeGateway } from "@/server/payments/stripe";
@@ -162,4 +167,79 @@ export async function refundBookingPayment(
       refundedCents: payment.amountCents,
     },
   });
+}
+
+/**
+ * Hosted checkout for an invoice.
+ *
+ * Reuses the booking checkout's guarantees: charges are created on the
+ * connected account with an application fee, the amount comes from the
+ * *stored* invoice rather than anything recomputed, and the idempotency key
+ * is derived from the invoice so a double-submitted payment cannot charge
+ * twice.
+ */
+export async function createCheckoutForInvoice(
+  reference: string,
+  deps: { gateway?: StripeGateway; appUrl?: string; feeBps?: number } = {},
+): Promise<{ url: string }> {
+  const invoice = await prisma.invoice.findFirst({
+    where: { reference, status: InvoiceStatus.SENT },
+    select: {
+      id: true,
+      reference: true,
+      number: true,
+      title: true,
+      totalCents: true,
+      amountPaidCents: true,
+      customerEmail: true,
+      business: {
+        select: {
+          name: true,
+          stripeAccountId: true,
+          stripeChargesEnabled: true,
+        },
+      },
+    },
+  });
+  if (!invoice) throw new NotFoundError("invoice");
+
+  const outstanding = balanceCents(invoice.totalCents, invoice.amountPaidCents);
+  if (outstanding <= 0) throw new AlreadyPaidError();
+
+  const { business } = invoice;
+  if (
+    !business.stripeAccountId ||
+    !business.stripeChargesEnabled ||
+    outstanding < MIN_CHARGE_CENTS
+  ) {
+    throw new PaymentNotRequiredError();
+  }
+
+  const feeBps = deps.feeBps ?? serverEnv().PLATFORM_FEE_BPS;
+  const appUrl = deps.appUrl ?? siteConfig.url;
+
+  const session = await (deps.gateway ?? stripeGateway()).createCheckoutSession(
+    {
+      accountId: business.stripeAccountId,
+      amountCents: outstanding,
+      platformFeeCents: platformFeeCents(outstanding, feeBps),
+      currency: "cad",
+      productName: `Invoice #${invoice.number}`,
+      productDescription: `${invoice.title} — ${business.name}`,
+      customerEmail: invoice.customerEmail,
+      successUrl: `${appUrl}/invoice/${invoice.reference}?paid=1`,
+      cancelUrl: `${appUrl}/invoice/${invoice.reference}`,
+      metadata: { invoiceId: invoice.id, reference: invoice.reference },
+      // Keyed on what is owed as well as the invoice: a part payment followed
+      // by a second attempt for the remainder is a different charge.
+      idempotencyKey: `invoice:${invoice.id}:${outstanding}`,
+    },
+  );
+
+  await prisma.invoice.update({
+    where: { id: invoice.id },
+    data: { stripeCheckoutSessionId: session.id },
+  });
+
+  return { url: session.url };
 }

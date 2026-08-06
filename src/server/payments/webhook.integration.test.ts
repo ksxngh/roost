@@ -78,6 +78,7 @@ beforeAll(() => {
 
 beforeEach(async () => {
   await prisma.stripeWebhookEvent.deleteMany();
+  await prisma.invoice.deleteMany();
   await prisma.booking.deleteMany();
   await prisma.business.deleteMany();
 });
@@ -466,5 +467,106 @@ describe("POST /api/stripe/webhook", () => {
       { STRIPE_SECRET_KEY: undefined, STRIPE_WEBHOOK_SECRET: undefined },
     );
     expect(response.status).toBe(503);
+  });
+});
+
+describe("invoice settlement", () => {
+  async function sentInvoice(sessionId: string) {
+    const business = await makeBusiness();
+    const invoice = await prisma.invoice.create({
+      data: {
+        businessId: business.id,
+        number: 1,
+        reference: `INV${Date.now()}`.slice(0, 8),
+        title: "Bathroom re-pipe",
+        customerName: "Dana Reyes",
+        customerEmail: "dana@example.com",
+        status: "SENT",
+        subtotalCents: 10_000,
+        taxRateBps: 0,
+        totalCents: 10_000,
+        stripeCheckoutSessionId: sessionId,
+      },
+    });
+    return invoice;
+  }
+
+  it("marks an invoice paid from its checkout session", async () => {
+    const invoice = await sentInvoice("cs_invoice_1");
+
+    const outcome = await handleStripeEvent(
+      event("checkout.session.completed", {
+        id: "cs_invoice_1",
+        payment_intent: "pi_invoice_1",
+        payment_status: "paid",
+        amount_total: 10_000,
+      }),
+    );
+
+    expect(outcome).toEqual({ handled: true, action: "invoice-paid" });
+    const stored = await prisma.invoice.findUniqueOrThrow({
+      where: { id: invoice.id },
+    });
+    expect(stored.status).toBe("PAID");
+    expect(stored.amountPaidCents).toBe(10_000);
+    expect(stored.stripePaymentIntentId).toBe("pi_invoice_1");
+  });
+
+  it("records a part payment without closing the invoice", async () => {
+    const invoice = await sentInvoice("cs_invoice_2");
+
+    await handleStripeEvent(
+      event("checkout.session.completed", {
+        id: "cs_invoice_2",
+        payment_intent: "pi_invoice_2",
+        payment_status: "paid",
+        amount_total: 4_000,
+      }),
+    );
+
+    const stored = await prisma.invoice.findUniqueOrThrow({
+      where: { id: invoice.id },
+    });
+    expect(stored.status).toBe("SENT");
+    expect(stored.amountPaidCents).toBe(4_000);
+  });
+
+  it("does not settle an invoice from an unpaid session", async () => {
+    const invoice = await sentInvoice("cs_invoice_3");
+
+    const outcome = await handleStripeEvent(
+      event("checkout.session.completed", {
+        id: "cs_invoice_3",
+        payment_status: "unpaid",
+      }),
+    );
+
+    expect(outcome).toEqual({ handled: false, reason: "unknown-target" });
+    const stored = await prisma.invoice.findUniqueOrThrow({
+      where: { id: invoice.id },
+    });
+    expect(stored.status).toBe("SENT");
+  });
+
+  it("does not pay an invoice twice when the event is replayed", async () => {
+    const invoice = await sentInvoice("cs_invoice_4");
+    const delivered = event(
+      "checkout.session.completed",
+      {
+        id: "cs_invoice_4",
+        payment_intent: "pi_invoice_4",
+        payment_status: "paid",
+        amount_total: 10_000,
+      },
+      "evt_invoice_replay",
+    );
+
+    await handleStripeEvent(delivered);
+    await handleStripeEvent(delivered);
+
+    const stored = await prisma.invoice.findUniqueOrThrow({
+      where: { id: invoice.id },
+    });
+    expect(stored.amountPaidCents).toBe(10_000);
   });
 });

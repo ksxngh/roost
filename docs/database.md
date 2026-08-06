@@ -26,6 +26,11 @@ erDiagram
     business ||--o{ booking : receives
     service_package ||--o{ booking : "sold as"
     booking ||--o| payment : "paid by"
+    business ||--o{ quote : issues
+    business ||--o{ invoice : issues
+    quote ||--o{ quote_line : "priced by"
+    quote ||--o| invoice : "billed as"
+    invoice ||--o{ invoice_line : "charged by"
 
     business {
         string id PK
@@ -109,6 +114,39 @@ erDiagram
         int refundedCents
         datetime paidAt
     }
+    quote {
+        string id PK
+        string reference UK "customer's handle"
+        string businessId FK
+        enum status "DRAFT SENT ACCEPTED DECLINED EXPIRED"
+        int subtotalCents "stored, matching the lines as sent"
+        int taxRateBps
+        int taxCents
+        int totalCents
+        int depositCents
+        string internalNote "never shown to the customer"
+        timestamptz validUntil
+    }
+    quote_line {
+        string id PK
+        string quoteId FK
+        string description
+        int quantityHundredths "250 is 2.5 units"
+        int unitPriceCents
+        int position
+    }
+    invoice {
+        string id PK
+        string reference UK
+        int number "sequential per business, never reused"
+        string businessId FK
+        string quoteId FK "unique; one invoice per quote"
+        string bookingId FK
+        enum status "DRAFT SENT PAID VOID"
+        int totalCents
+        int amountPaidCents "below total means part-paid"
+        timestamptz dueAt
+    }
     stripe_webhook_event {
         string id PK "Stripe's event id; the insert is the idempotency lock"
         string type
@@ -166,6 +204,9 @@ country)` on `service_area`, and `(businessId, date)` on
 city or closed day an idempotent no-op instead of an error.
 `(businessId, weekday, startMinute)` is unique on `business_hour` so a day
 cannot hold two windows that open at the same minute.
+`(businessId, number)` is unique on `invoice`, and the number comes from
+`business.invoiceCounter` incremented in place rather than from
+`MAX(number)` — see [billing.md](billing.md#invoice-numbers).
 
 `booking` additionally carries an **exclusion constraint**, which is the only
 reason two customers cannot hold the same slot — see

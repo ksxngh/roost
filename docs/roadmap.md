@@ -14,8 +14,8 @@ begins.
 | 4   | Marketplace & booking            | City/category search, listings, slot selection, booking creation              | ✅ Done |
 | 5   | Payments                         | Stripe Connect onboarding, checkout, platform fee, payouts                    | ✅ Done |
 | 6   | Jobs & scheduling ops            | Calendar view, job assignment, day sheets, background worker                  | ✅ Done |
-| 7   | Quotes & invoicing               | Estimate → approval → scheduled job → invoice                                 | Next    |
-| 8   | Client CRM                       | Auto-built client list, history, notes, addresses                             |         |
+| 7   | Quotes & invoicing               | Estimate → approval → invoice → payment                                       | ✅ Done |
+| 8   | Client CRM                       | Auto-built client list, history, notes, addresses                             | Next    |
 | 9   | Teams & permissions              | Seats, job assignment, granular permissions                                   |         |
 | 10  | Subscriptions                    | Pro/Premium tiers, feature gating, billing                                    |         |
 | 11  | Admin, hardening, deploy         | Moderation, verification queue, rate limits, WCAG, CD                         |         |

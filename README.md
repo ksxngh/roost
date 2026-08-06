@@ -5,9 +5,9 @@ run their business with. Homeowners find a licensed, insured pro and book
 them; the pro gets scheduling, quotes, invoicing, and a client list in the
 same account.
 
-> **Status:** Milestone 6 complete — week calendar, day sheets, job
-> assignment, and a background worker sending reminders. Milestone 7 adds
-> quotes and invoicing. See [docs/roadmap.md](docs/roadmap.md).
+> **Status:** Milestone 7 complete — quotes, customer approval, invoices, and
+> online payment. Milestone 8 adds the client list. See
+> [docs/roadmap.md](docs/roadmap.md).
 
 ## Stack
 
@@ -77,6 +77,8 @@ src/
     api/stripe/   # Signed Stripe webhook
     booking/      # Customer's booking confirmation, by reference
     pricing/      # Public plans and comparison
+    quote/        # Customer's quote, accept or decline
+    invoice/      # Customer's invoice, with payment
     browse/       # Public marketplace search
     pro/[slug]/   # Public storefront and booking flow
     onboarding/   # Business creation
@@ -84,6 +86,7 @@ src/
   components/
     auth/         # Auth forms and fields
     availability/ # Weekly hours, closures, booking rules, slot preview
+    billing/      # Quote and invoice editors, line items, totals
     booking/      # Customer slot picker and details form
     payments/     # Stripe Connect status card
     schedule/     # Calendar, day sheet, booking list, assignment
@@ -94,6 +97,7 @@ src/
     ui/           # shadcn/ui primitives (generated, not hand-edited)
   lib/            # Config, env validation, validation schemas, utilities
   server/         # Framework-agnostic server code
+    billing/      # Quotes, invoices, document numbering
     businesses/   # Access, business, packages, availability, bookings, documents
     notifications/# Booking mail
     payments/     # Stripe gateway, Connect, checkout, webhook handling
@@ -114,6 +118,7 @@ docs/             # Architecture, ADRs, roadmap, auth, database, storefront, tes
 - [Booking](docs/booking.md)
 - [Payments](docs/payments.md)
 - [Plans & pricing](docs/pricing.md)
+- [Quotes & invoicing](docs/billing.md)
 - [Running the work](docs/operations.md)
 - [Roadmap](docs/roadmap.md)
 - [Testing](docs/testing.md)

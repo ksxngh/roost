@@ -134,7 +134,10 @@ export async function listBusinessDocuments(
   await requireMembership(userId, businessId);
   return prisma.businessDocument.findMany({
     where: { businessId },
-    orderBy: { createdAt: "desc" },
+    // `id` breaks the tie: two documents uploaded in the same millisecond
+    // would otherwise come back in whatever order the planner chose, so the
+    // list could reorder itself between renders.
+    orderBy: [{ createdAt: "desc" }, { id: "desc" }],
   });
 }
 

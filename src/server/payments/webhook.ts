@@ -1,4 +1,5 @@
 import { PaymentStatus } from "@/generated/prisma/enums";
+import { markInvoicePaid } from "@/server/billing/invoices";
 import { prisma } from "@/server/db";
 
 /** Events this application acts on. Anything else is acknowledged and dropped. */
@@ -76,11 +77,32 @@ export async function handleStripeEvent(
           failureReason: null,
         },
       });
-      if (count === 0) return { handled: false, reason: "unknown-target" };
-      return {
-        handled: true,
-        action: paid ? "payment-succeeded" : "payment-pending",
-      };
+      if (count > 0) {
+        return {
+          handled: true,
+          action: paid ? "payment-succeeded" : "payment-pending",
+        };
+      }
+
+      // The same event settles an invoice: invoices check out through the
+      // same Stripe session mechanism but are tracked on their own row.
+      if (paid) {
+        const invoice = await prisma.invoice.findFirst({
+          where: { stripeCheckoutSessionId: sessionId },
+          select: { id: true, totalCents: true, amountPaidCents: true },
+        });
+        if (invoice) {
+          // Trust Stripe's figure for what was actually collected; fall back
+          // to the outstanding balance only if the event omits it.
+          const collected =
+            Number(object.amount_total ?? 0) ||
+            invoice.totalCents - invoice.amountPaidCents;
+          await markInvoicePaid(invoice.id, collected, { paymentIntentId });
+          return { handled: true, action: "invoice-paid" };
+        }
+      }
+
+      return { handled: false, reason: "unknown-target" };
     }
 
     case "checkout.session.expired":

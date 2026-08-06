@@ -135,6 +135,14 @@ model Business {
   stripePayoutsEnabled   Boolean @default(false)
   stripeDetailsSubmitted Boolean @default(false)
 
+  /// Monotonic invoice counter for this business.
+  ///
+  /// Incremented with `{ increment: 1 }`, which compiles to an in-place SQL
+  /// update and therefore takes a row lock — concurrent invoice creation
+  /// serialises on it. Deriving the next number from `MAX(number)` instead
+  /// would let simultaneous writers read the same maximum.
+  invoiceCounter Int @default(0)
+
   /// IANA zone. Opening hours are wall-clock times in this zone, so every
   /// instant shown to a customer is derived from it.
   timezone           String @default("America/Vancouver")
@@ -145,6 +153,8 @@ model Business {
 
   members                BusinessMember[]
   bookings               Booking[]
+  quotes                 Quote[]
+  invoices               Invoice[]
   categories             BusinessCategory[]
   serviceAreas           ServiceArea[]
   documents              BusinessDocument[]
@@ -425,6 +435,7 @@ model Booking {
   respondedAt        DateTime?
 
   payment Payment?
+  invoice Invoice?
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -495,4 +506,170 @@ model StripeWebhookEvent {
   processedAt DateTime @default(now())
 
   @@map("stripe_webhook_event")
+}
+
+enum QuoteStatus {
+  /// Being written; the customer cannot see it.
+  DRAFT
+  /// Sent and awaiting an answer.
+  SENT
+  /// The customer said yes.
+  ACCEPTED
+  /// The customer said no.
+  DECLINED
+  /// `validUntil` passed without an answer.
+  EXPIRED
+}
+
+enum InvoiceStatus {
+  DRAFT
+  SENT
+  PAID
+  /// Cancelled after issue. Kept, never deleted — an issued invoice is a
+  /// record even when it is withdrawn.
+  VOID
+}
+
+/// A priced proposal for work that could not be fixed-priced up front.
+///
+/// Customer details are copied rather than referenced: a quote is a document
+/// as it was sent, and editing a client record later must not silently
+/// rewrite what someone agreed to.
+model Quote {
+  id         String   @id @default(cuid())
+  /// Public handle, same alphabet and guarantees as a booking reference.
+  reference  String   @unique
+  businessId String
+  business   Business @relation(fields: [businessId], references: [id], onDelete: Cascade)
+
+  title        String
+  /// Shown to the customer.
+  notes        String?
+  /// Never shown to the customer.
+  internalNote String?
+
+  customerName  String
+  customerEmail String
+  customerPhone String?
+  addressLine1  String?
+  addressLine2  String?
+  city          String?
+  region        String?
+  postalCode    String?
+
+  status     QuoteStatus @default(DRAFT)
+  /// After this the quote is stale; the sweep marks it EXPIRED.
+  validUntil DateTime?   @db.Timestamptz(3)
+
+  /// Totals are derived from the lines but stored, so a historical document
+  /// keeps the numbers it was sent with even if the maths ever changes.
+  subtotalCents Int @default(0)
+  taxRateBps    Int @default(0)
+  taxCents      Int @default(0)
+  totalCents    Int @default(0)
+  /// Optional up-front payment required to schedule the work.
+  depositCents  Int @default(0)
+
+  lines QuoteLine[]
+
+  /// Set when accepting produced an invoice.
+  invoice Invoice?
+
+  sentAt        DateTime?
+  respondedAt   DateTime?
+  declineReason String?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([businessId, status])
+  @@index([customerEmail])
+  @@map("quote")
+}
+
+model QuoteLine {
+  id      String @id @default(cuid())
+  quoteId String
+  quote   Quote  @relation(fields: [quoteId], references: [id], onDelete: Cascade)
+
+  description        String
+  /// Hundredths of a unit, so "2.5 hours" is 250. Integer arithmetic only —
+  /// a quantity stored as a float would round money wrong.
+  quantityHundredths Int    @default(100)
+  unitPriceCents     Int
+  position           Int    @default(0)
+
+  @@index([quoteId])
+  @@map("quote_line")
+}
+
+/// A demand for payment. Issued from a quote, a booking, or on its own.
+model Invoice {
+  id         String   @id @default(cuid())
+  reference  String   @unique
+  businessId String
+  business   Business @relation(fields: [businessId], references: [id], onDelete: Cascade)
+
+  /// Sequential per business, for the customer's records and the provider's
+  /// bookkeeping. Unique per business, never reused.
+  number Int
+
+  quoteId   String?  @unique
+  quote     Quote?   @relation(fields: [quoteId], references: [id], onDelete: SetNull)
+  /// The job this bills for, when there is one.
+  bookingId String?  @unique
+  booking   Booking? @relation(fields: [bookingId], references: [id], onDelete: SetNull)
+
+  title String
+  notes String?
+
+  customerName  String
+  customerEmail String
+  customerPhone String?
+  addressLine1  String?
+  addressLine2  String?
+  city          String?
+  region        String?
+  postalCode    String?
+
+  status InvoiceStatus @default(DRAFT)
+  dueAt  DateTime?     @db.Timestamptz(3)
+
+  subtotalCents   Int @default(0)
+  taxRateBps      Int @default(0)
+  taxCents        Int @default(0)
+  totalCents      Int @default(0)
+  /// Sum of settled payments. Below `totalCents` means part-paid.
+  amountPaidCents Int @default(0)
+
+  lines InvoiceLine[]
+
+  /// Stripe Checkout for this invoice, when one has been started.
+  stripeCheckoutSessionId String?   @unique
+  stripePaymentIntentId   String?   @unique
+  sentAt                  DateTime?
+  paidAt                  DateTime?
+  voidedAt                DateTime?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([businessId, number])
+  @@index([businessId, status])
+  @@index([customerEmail])
+  @@map("invoice")
+}
+
+model InvoiceLine {
+  id        String  @id @default(cuid())
+  invoiceId String
+  invoice   Invoice @relation(fields: [invoiceId], references: [id], onDelete: Cascade)
+
+  description        String
+  quantityHundredths Int    @default(100)
+  unitPriceCents     Int
+  position           Int    @default(0)
+
+  @@index([invoiceId])
+  @@map("invoice_line")
 }

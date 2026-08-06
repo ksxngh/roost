@@ -122,7 +122,6 @@ describe("feature comparison", () => {
     const notYetBuilt = [
       "Guaranteed bookings — Roost advertises you and sends you jobs",
       "Roost-funded advertising across search and social",
-      "Quotes and invoicing",
       "Client list and job history",
       "Invite employees",
       "Granular permissions per teammate",
@@ -144,6 +143,7 @@ describe("feature comparison", () => {
       "Licence and insurance verification",
       "Calendar, day sheets, and job reminders",
       "Assign jobs across your team",
+      "Quotes and invoicing",
     ];
     for (const label of shipped) {
       const feature = PLAN_FEATURES.find((entry) => entry.label === label);

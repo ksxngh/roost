@@ -117,7 +117,7 @@ export const PLAN_FEATURES: readonly PlanFeature[] = [
     pro: "live",
     premium: "live",
   },
-  { label: "Quotes and invoicing", pro: "soon", premium: "soon" },
+  { label: "Quotes and invoicing", pro: "live", premium: "live" },
   { label: "Licence and insurance verification", pro: "live", premium: "live" },
   {
     label: "Calendar, day sheets, and job reminders",

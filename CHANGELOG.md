@@ -4,6 +4,40 @@ All notable changes are documented here. Format follows
 [Keep a Changelog](https://keepachangelog.com/); versions follow semver
 (pre-1.0: minor = milestone).
 
+## [0.12.0] — 2026-08-05 · Milestone 7: Quotes & invoicing
+
+Work that could not be priced online can now be quoted, agreed, invoiced, and
+paid.
+
+### Added
+
+- **Quotes** (`/quotes`): line items with quantities and unit prices, tax
+  presets per province, an optional deposit and expiry, and notes split into
+  customer-facing and internal.
+- **Customer approval** (`/quote/<reference>`): accept, or decline with a
+  reason. No account needed — holding the reference is the authorisation.
+- **Invoices** (`/invoices`, `/invoice/<reference>`) raised from an accepted
+  quote or standalone, sequentially numbered per business, payable through
+  the same Stripe Connect checkout as a booking.
+- **`src/lib/money.ts`**, the single place any total is computed. Quantities
+  are hundredths of a unit, prices are cents, and nothing is a float. The
+  line editor computes its running total with the same functions the server
+  uses, so what a provider sees while typing is what gets stored.
+- Quote and invoice email to both sides.
+- 128 new tests.
+
+### Changed
+
+- The pricing page's "Quotes and invoicing" row flips from **Soon** to
+  included, and the test that guards unbuilt claims was updated with it.
+
+### Fixed
+
+- `listBusinessDocuments` ordered only by `createdAt`, so two documents
+  uploaded in the same millisecond came back in whatever order the planner
+  chose and the list could reorder itself between renders. Now tie-broken by
+  id. Surfaced as an intermittent test failure that passed in isolation.
+
 ## [0.11.0] — 2026-08-04 · Plans & pricing
 
 ### Added
