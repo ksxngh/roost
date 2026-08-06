@@ -4,6 +4,35 @@ All notable changes are documented here. Format follows
 [Keep a Changelog](https://keepachangelog.com/); versions follow semver
 (pre-1.0: minor = milestone).
 
+## [0.11.0] — 2026-08-04 · Plans & pricing
+
+### Added
+
+- **Public pricing page** (`/pricing`) with a two-tier plan comparison:
+  Roost Pro at **$129.99 CAD/month** (1 seat) and Roost Premium at
+  **$214.99** (up to 8 seats), each **$15/month under** Padpal's comparable
+  tier. Annual billing quoted at ten months for twelve.
+- `src/lib/plans.ts` as the single source of truth for prices, seats, and the
+  feature grid — the page hardcodes no numbers.
+- Every comparison row carries a `live`/`soon` status. Unbuilt capability
+  renders a **Soon** badge rather than a tick, and a test fails if any of the
+  named unbuilt features is ever marked live.
+
+### Changed
+
+- **Marketplace fee cut from 10% to 8%**, undercutting Padpal's 9%.
+  Undercutting the subscription while charging a higher take rate would lose
+  the comparison on the largest jobs. A test asserts the advertised rate and
+  the rate checkout applies are the same number.
+
+### Fixed
+
+- Two dead links on the public landing page: "For business" and "List your
+  business" pointed at `/for-business`, which 404s, and the homeowner "Find a
+  pro" button pointed at `/services` — the _provider's_ protected service
+  editor, which bounced visitors to sign-in. They now go to `/pricing` and
+  `/browse`.
+
 ## [0.10.0] — 2026-08-04 · Milestone 6: Jobs & scheduling ops
 
 The provider's side of a booked job: seeing it, assigning it, and being
@@ -55,7 +84,7 @@ keys the app runs exactly as before.
 - **Hosted Checkout at booking** for fixed-price services on a connected
   account. Card details never touch our origin.
 - **Platform fee** via Stripe's application fee, configurable through
-  `PLATFORM_FEE_BPS` (default 10%), rounded down so rounding never costs the
+  `PLATFORM_FEE_BPS`, rounded down so rounding never costs the
   provider more than the stated rate.
 - **Signed webhook endpoint** (`/api/stripe/webhook`) handling checkout
   completion, expiry, failure, refunds, and account updates.

@@ -78,7 +78,7 @@ export default function LandingPage() {
         <div className="flex items-center gap-2">
           <ThemeToggle />
           <Button asChild variant="ghost" className="hidden sm:inline-flex">
-            <Link href="/for-business">For business</Link>
+            <Link href="/pricing">For business</Link>
           </Button>
           <Button asChild variant="ghost">
             <Link href="/login">Sign in</Link>
@@ -99,13 +99,13 @@ export default function LandingPage() {
           </p>
           <div className="mt-10 flex flex-col gap-3 sm:flex-row">
             <Button asChild size="lg">
-              <Link href="/services">
+              <Link href="/browse">
                 Find a pro
                 <ArrowRight className="size-4" aria-hidden />
               </Link>
             </Button>
             <Button asChild size="lg" variant="outline">
-              <Link href="/for-business">List your business</Link>
+              <Link href="/pricing">List your business</Link>
             </Button>
           </div>
         </section>

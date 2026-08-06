@@ -50,15 +50,19 @@ const serverSchema = z.object({
   /** Required to verify webhook signatures; without it events are refused. */
   STRIPE_WEBHOOK_SECRET: z.string().min(1).optional(),
   /**
-   * Roost's cut, in basis points (1000 = 10%). Applied to the service price
-   * as a Stripe application fee on the connected account's charge.
+   * Roost's cut, in basis points. Applied to the service price as a Stripe
+   * application fee on the connected account's charge.
+   *
+   * The default must match what `src/lib/plans.ts` advertises — charging more
+   * than the pricing page states is the worst kind of bug — and a test
+   * asserts the two agree.
    */
   PLATFORM_FEE_BPS: z.coerce
     .number()
     .int()
     .min(0)
     .max(3000, "a fee above 30% is almost certainly a typo")
-    .default(1000),
+    .default(800),
 });
 
 const clientSchema = z.object({

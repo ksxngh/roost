@@ -16,7 +16,8 @@ To switch them on:
 2. Put `STRIPE_SECRET_KEY=sk_test_…` in `.env`.
 3. Run `stripe listen --forward-to localhost:3000/api/stripe/webhook` and put
    the `whsec_…` it prints into `STRIPE_WEBHOOK_SECRET`.
-4. Optionally set `PLATFORM_FEE_BPS` (default `1000` = 10%).
+4. Optionally set `PLATFORM_FEE_BPS` (default `800` = 8%). It must match what
+   [pricing.md](pricing.md) advertises — a test enforces that.
 
 Both keys are required before any money can move — `paymentsConfigured()`
 checks for the pair, because a secret key without a webhook secret would let

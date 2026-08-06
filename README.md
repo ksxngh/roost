@@ -76,6 +76,7 @@ src/
     api/documents/# Verification-document upload and download
     api/stripe/   # Signed Stripe webhook
     booking/      # Customer's booking confirmation, by reference
+    pricing/      # Public plans and comparison
     browse/       # Public marketplace search
     pro/[slug]/   # Public storefront and booking flow
     onboarding/   # Business creation
@@ -112,6 +113,7 @@ docs/             # Architecture, ADRs, roadmap, auth, database, storefront, tes
 - [Services & availability](docs/scheduling.md)
 - [Booking](docs/booking.md)
 - [Payments](docs/payments.md)
+- [Plans & pricing](docs/pricing.md)
 - [Running the work](docs/operations.md)
 - [Roadmap](docs/roadmap.md)
 - [Testing](docs/testing.md)
