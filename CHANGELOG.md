@@ -4,6 +4,35 @@ All notable changes are documented here. Format follows
 [Keep a Changelog](https://keepachangelog.com/); versions follow semver
 (pre-1.0: minor = milestone).
 
+## [0.13.0] — 2026-08-05 · Milestone 8: Client CRM
+
+The client list builds itself from the work, with no "add client" button.
+
+### Added
+
+- **`Client`** model, keyed by `(businessId, lower(email))`. Bookings,
+  quotes, and invoices all resolve to one through `linkClient` at creation.
+- **`/clients`** with search across name, email, phone, and city, showing job
+  count and lifetime value; **`/clients/[id]`** with full history, contact
+  details, private notes, and archiving.
+- **Backfill migration** reconstructing clients from every existing booking,
+  quote, and invoice — an established business's list is not empty on day
+  one.
+
+### Changed
+
+- Lifetime value counts **paid invoices only**; billed-but-unreceived money
+  is shown separately as outstanding.
+- The pricing page's "Client list and job history" row is now live rather
+  than Soon.
+
+### Fixed
+
+- `linkClient` stored postal codes and provinces exactly as typed while the
+  documents upper-cased them, so a client record could read `v5h 2k9` where
+  its own booking said `V5H 2K9`. Normalisation moved inside `linkClient` so
+  every call site is right.
+
 ## [0.12.0] — 2026-08-05 · Milestone 7: Quotes & invoicing
 
 Work that could not be priced online can now be quoted, agreed, invoiced, and

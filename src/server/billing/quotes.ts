@@ -10,6 +10,7 @@ import {
   requireEditor,
   requireMembership,
 } from "@/server/businesses/access";
+import { linkClient } from "@/server/businesses/clients";
 import { prisma } from "@/server/db";
 
 export class QuoteNotEditableError extends Error {
@@ -66,11 +67,24 @@ export async function createQuote(
 ): Promise<QuoteModel> {
   await requireEditor(userId, businessId, "write a quote");
 
+  // The client record is derived from the document, not chosen on a form.
+  const clientId = await linkClient(businessId, {
+    email: input.customerEmail,
+    name: input.customerName,
+    phone: input.customerPhone,
+    addressLine1: input.addressLine1,
+    addressLine2: input.addressLine2,
+    city: input.city,
+    region: input.region,
+    postalCode: input.postalCode,
+  });
+
   for (let attempt = 0; attempt < REFERENCE_ATTEMPTS; attempt += 1) {
     try {
       return await prisma.quote.create({
         data: {
           businessId,
+          clientId,
           reference: generateReference(randomBytes),
           ...documentFields(input),
           lines: {

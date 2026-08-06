@@ -5,8 +5,9 @@ run their business with. Homeowners find a licensed, insured pro and book
 them; the pro gets scheduling, quotes, invoicing, and a client list in the
 same account.
 
-> **Status:** Milestone 7 complete — quotes, customer approval, invoices, and
-> online payment. Milestone 8 adds the client list. See
+> **Status:** Milestone 8 complete — the client list builds itself from
+> bookings, quotes, and invoices, with history, notes, and lifetime value.
+> Milestone 9 adds team invites and permissions. See
 > [docs/roadmap.md](docs/roadmap.md).
 
 ## Stack
@@ -118,6 +119,7 @@ docs/             # Architecture, ADRs, roadmap, auth, database, storefront, tes
 - [Booking](docs/booking.md)
 - [Payments](docs/payments.md)
 - [Plans & pricing](docs/pricing.md)
+- [Clients](docs/clients.md)
 - [Quotes & invoicing](docs/billing.md)
 - [Running the work](docs/operations.md)
 - [Roadmap](docs/roadmap.md)

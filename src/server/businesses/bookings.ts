@@ -17,6 +17,7 @@ import {
   requireMembership,
 } from "@/server/businesses/access";
 import { publicAvailability } from "@/server/businesses/availability";
+import { linkClient } from "@/server/businesses/clients";
 import { prisma } from "@/server/db";
 
 /** The customer asked for a time that is no longer on offer. */
@@ -127,8 +128,23 @@ export async function createBooking(
     startAt.getTime() + servicePackage.durationMinutes * 60_000,
   );
 
+  // The client record is derived from the booking, so a marketplace customer
+  // becomes a known client the moment they book rather than after any
+  // manual entry.
+  const clientId = await linkClient(business.id, {
+    email: input.customerEmail,
+    name: input.customerName,
+    phone: input.customerPhone,
+    addressLine1: input.addressLine1,
+    addressLine2: input.addressLine2,
+    city: input.city,
+    region: input.region,
+    postalCode: input.postalCode,
+  });
+
   const data = {
     businessId: business.id,
+    clientId,
     packageId: servicePackage.id,
     packageName: servicePackage.name,
     pricingModel: servicePackage.pricingModel,

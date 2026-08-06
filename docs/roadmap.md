@@ -15,8 +15,8 @@ begins.
 | 5   | Payments                         | Stripe Connect onboarding, checkout, platform fee, payouts                    | ✅ Done |
 | 6   | Jobs & scheduling ops            | Calendar view, job assignment, day sheets, background worker                  | ✅ Done |
 | 7   | Quotes & invoicing               | Estimate → approval → invoice → payment                                       | ✅ Done |
-| 8   | Client CRM                       | Auto-built client list, history, notes, addresses                             | Next    |
-| 9   | Teams & permissions              | Seats, job assignment, granular permissions                                   |         |
+| 8   | Client CRM                       | Auto-built client list, history, notes, addresses                             | ✅ Done |
+| 9   | Teams & permissions              | Invites, seats, granular permissions                                          | Next    |
 | 10  | Subscriptions                    | Pro/Premium tiers, feature gating, billing                                    |         |
 | 11  | Admin, hardening, deploy         | Moderation, verification queue, rate limits, WCAG, CD                         |         |
 

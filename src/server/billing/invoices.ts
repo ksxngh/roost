@@ -10,6 +10,7 @@ import {
   requireEditor,
   requireMembership,
 } from "@/server/businesses/access";
+import { linkClient } from "@/server/businesses/clients";
 import { prisma } from "@/server/db";
 
 export class InvoiceNotEditableError extends Error {
@@ -87,6 +88,17 @@ export async function createInvoice(
 ): Promise<InvoiceModel> {
   await requireEditor(userId, businessId, "raise an invoice");
 
+  const clientId = await linkClient(businessId, {
+    email: input.customerEmail,
+    name: input.customerName,
+    phone: input.customerPhone,
+    addressLine1: input.addressLine1,
+    addressLine2: input.addressLine2,
+    city: input.city,
+    region: input.region,
+    postalCode: input.postalCode,
+  });
+
   const number = await allocateNumber(businessId);
 
   // Only the reference can now collide, and it is drawn from a CSPRNG — the
@@ -96,6 +108,7 @@ export async function createInvoice(
       return await prisma.invoice.create({
         data: {
           businessId,
+          clientId,
           number,
           reference: generateReference(randomBytes),
           quoteId: links.quoteId ?? null,

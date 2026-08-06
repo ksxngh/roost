@@ -135,6 +135,8 @@ model Business {
   stripePayoutsEnabled   Boolean @default(false)
   stripeDetailsSubmitted Boolean @default(false)
 
+  clients Client[]
+
   /// Monotonic invoice counter for this business.
   ///
   /// Incremented with `{ increment: 1 }`, which compiles to an in-place SQL
@@ -404,6 +406,10 @@ model Booking {
 
   status BookingStatus @default(PENDING)
 
+  /// The customer record this belongs to, resolved at creation.
+  clientId String?
+  client   Client? @relation(fields: [clientId], references: [id], onDelete: SetNull)
+
   /// Marketplace customers need not have an account; the account link is set
   /// when they happened to be signed in.
   userId        String?
@@ -442,6 +448,7 @@ model Booking {
 
   @@index([businessId, startAt])
   @@index([customerEmail])
+  @@index([clientId])
   @@index([status])
   @@index([assignedToId])
   @@map("booking")
@@ -548,6 +555,9 @@ model Quote {
   /// Never shown to the customer.
   internalNote String?
 
+  clientId String?
+  client   Client? @relation(fields: [clientId], references: [id], onDelete: SetNull)
+
   customerName  String
   customerEmail String
   customerPhone String?
@@ -584,6 +594,7 @@ model Quote {
 
   @@index([businessId, status])
   @@index([customerEmail])
+  @@index([clientId])
   @@map("quote")
 }
 
@@ -623,6 +634,9 @@ model Invoice {
   title String
   notes String?
 
+  clientId String?
+  client   Client? @relation(fields: [clientId], references: [id], onDelete: SetNull)
+
   customerName  String
   customerEmail String
   customerPhone String?
@@ -657,6 +671,7 @@ model Invoice {
   @@unique([businessId, number])
   @@index([businessId, status])
   @@index([customerEmail])
+  @@index([clientId])
   @@map("invoice")
 }
 
@@ -672,4 +687,47 @@ model InvoiceLine {
 
   @@index([invoiceId])
   @@map("invoice_line")
+}
+
+/// A customer of one business, assembled from the work they have booked,
+/// been quoted, and been invoiced.
+///
+/// Never created by hand: a client appears the moment a document carries
+/// their email, and the identity is `(businessId, email)`. Two businesses
+/// serving the same household hold two independent records — one provider's
+/// notes are not another's, and neither should learn the other exists.
+model Client {
+  id         String   @id @default(cuid())
+  businessId String
+  business   Business @relation(fields: [businessId], references: [id], onDelete: Cascade)
+
+  /// Lower-cased on write; the identity within this business.
+  email String
+  name  String
+  phone String?
+
+  /// The most recent address seen on a document, so the next job can be
+  /// pre-filled. Historic addresses stay on the documents themselves.
+  addressLine1 String?
+  addressLine2 String?
+  city         String?
+  region       String?
+  postalCode   String?
+
+  /// Provider-only. Gate codes, dogs, who to ask for.
+  notes String?
+
+  /// Hidden from the working list without losing the history.
+  archivedAt DateTime?
+
+  bookings Booking[]
+  quotes   Quote[]
+  invoices Invoice[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([businessId, email])
+  @@index([businessId, name])
+  @@map("client")
 }

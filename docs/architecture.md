@@ -1,6 +1,6 @@
 # Architecture
 
-## Current state (after Milestone 7)
+## Current state (after Milestone 8)
 
 Roost is a single Next.js application backed by PostgreSQL, Redis, and an
 object store. The App Router serves three surfaces from one deployable: the
