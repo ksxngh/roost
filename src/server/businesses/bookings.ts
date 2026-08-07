@@ -12,8 +12,9 @@ import {
   generateReference,
 } from "@/lib/validations/booking";
 import {
+  MemberCapability,
   NotFoundError,
-  requireEditor,
+  requireCapability,
   requireMembership,
 } from "@/server/businesses/access";
 import { publicAvailability } from "@/server/businesses/availability";
@@ -276,7 +277,12 @@ async function transition(
   to: BookingStatus,
   extra: { cancellationReason?: string | null } = {},
 ): Promise<BookingModel> {
-  await requireEditor(userId, businessId, "manage bookings");
+  await requireCapability(
+    userId,
+    businessId,
+    MemberCapability.SCHEDULE,
+    "manage bookings",
+  );
 
   // Scoped by businessId, so another business's booking reads as missing.
   const booking = await prisma.booking.findFirst({
@@ -371,7 +377,12 @@ export async function assignBooking(
   bookingId: string,
   memberId: string | null,
 ): Promise<void> {
-  await requireEditor(userId, businessId, "assign work");
+  await requireCapability(
+    userId,
+    businessId,
+    MemberCapability.SCHEDULE,
+    "assign work",
+  );
 
   if (memberId) {
     const member = await prisma.businessMember.findFirst({
@@ -395,7 +406,12 @@ export async function setInternalNote(
   bookingId: string,
   note: string | null,
 ): Promise<void> {
-  await requireEditor(userId, businessId, "annotate a booking");
+  await requireCapability(
+    userId,
+    businessId,
+    MemberCapability.SCHEDULE,
+    "annotate a booking",
+  );
   const { count } = await prisma.booking.updateMany({
     where: { id: bookingId, businessId },
     data: { internalNote: note?.trim() || null },

@@ -5,7 +5,11 @@ import { fileTypeFromBuffer } from "file-type";
 import type { BusinessDocumentKind } from "@/generated/prisma/enums";
 import { serverEnv } from "@/lib/env";
 import { prisma } from "@/server/db";
-import { requireEditor, requireMembership } from "@/server/businesses/access";
+import {
+  MemberCapability,
+  requireCapability,
+  requireMembership,
+} from "@/server/businesses/access";
 import { storage, type Storage } from "@/server/storage";
 
 /**
@@ -67,7 +71,12 @@ export async function uploadBusinessDocument(
   },
   deps: { store?: Storage; maxBytes?: number } = {},
 ) {
-  await requireEditor(userId, businessId, "upload verification documents");
+  await requireCapability(
+    userId,
+    businessId,
+    MemberCapability.STOREFRONT,
+    "upload verification documents",
+  );
 
   const store = deps.store ?? storage();
   const maxBytes = deps.maxBytes ?? serverEnv().MAX_UPLOAD_MB * 1024 * 1024;
@@ -151,7 +160,12 @@ export async function deleteBusinessDocument(
   documentId: string,
   deps: { store?: Storage } = {},
 ): Promise<void> {
-  await requireEditor(userId, businessId, "remove verification documents");
+  await requireCapability(
+    userId,
+    businessId,
+    MemberCapability.STOREFRONT,
+    "remove verification documents",
+  );
   const document = await prisma.businessDocument.findFirst({
     where: { id: documentId, businessId },
     select: { id: true, storageKey: true },

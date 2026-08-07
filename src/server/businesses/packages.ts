@@ -1,8 +1,9 @@
 import type { ServicePackageModel } from "@/generated/prisma/models";
 import type { ServicePackageInput } from "@/lib/validations/scheduling";
 import {
+  MemberCapability,
   NotFoundError,
-  requireEditor,
+  requireCapability,
   requireMembership,
 } from "@/server/businesses/access";
 import { prisma } from "@/server/db";
@@ -47,7 +48,12 @@ export async function createPackage(
   businessId: string,
   input: ServicePackageInput,
 ): Promise<ServicePackageModel> {
-  await requireEditor(userId, businessId, "add a service");
+  await requireCapability(
+    userId,
+    businessId,
+    MemberCapability.STOREFRONT,
+    "add a service",
+  );
   await assertCategoryExists(input.categoryId);
 
   const existing = await prisma.servicePackage.count({ where: { businessId } });
@@ -78,7 +84,12 @@ export async function updatePackage(
   packageId: string,
   input: ServicePackageInput,
 ): Promise<void> {
-  await requireEditor(userId, businessId, "edit a service");
+  await requireCapability(
+    userId,
+    businessId,
+    MemberCapability.STOREFRONT,
+    "edit a service",
+  );
   await assertCategoryExists(input.categoryId);
 
   // Scoped by businessId, so another business's id reads as missing.
@@ -103,7 +114,12 @@ export async function deletePackage(
   businessId: string,
   packageId: string,
 ): Promise<void> {
-  await requireEditor(userId, businessId, "remove a service");
+  await requireCapability(
+    userId,
+    businessId,
+    MemberCapability.STOREFRONT,
+    "remove a service",
+  );
   await prisma.servicePackage.deleteMany({
     where: { id: packageId, businessId },
   });
@@ -121,7 +137,12 @@ export async function reorderPackages(
   businessId: string,
   orderedIds: string[],
 ): Promise<void> {
-  await requireEditor(userId, businessId, "reorder services");
+  await requireCapability(
+    userId,
+    businessId,
+    MemberCapability.STOREFRONT,
+    "reorder services",
+  );
   await prisma.$transaction(
     orderedIds.map((id, index) =>
       prisma.servicePackage.updateMany({

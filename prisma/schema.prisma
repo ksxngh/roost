@@ -87,12 +87,38 @@ model Verification {
 // Domain models (hand-written — see the note on User above)
 // ─────────────────────────────────────────────────────────────────────────
 
+/// Which subscription tier a business is on. Sets the seat limit. Billing is
+/// not wired up yet (Milestone 10), so a new business defaults to PREMIUM —
+/// during the pre-billing phase nobody is charged, so gating team features
+/// behind a payment nobody can make would help no one. Milestone 10 sets this
+/// from the actual subscription and handles downgrades.
+enum PlanTier {
+  PRO
+  PREMIUM
+}
+
 /// Seat role within one business. Owners can never be removed or demoted by
 /// another member; that guarantee is enforced in the service layer.
 enum BusinessRole {
   OWNER
   ADMIN
   MEMBER
+}
+
+/// A discrete thing a team member may be allowed to do.
+///
+/// OWNER and ADMIN hold all of these implicitly. A MEMBER (a field tech)
+/// holds only what has been granted, which is what makes permissions
+/// "granular": one member can be trusted with the schedule but not the money.
+enum MemberCapability {
+  /// Respond to, assign, and complete bookings.
+  SCHEDULE
+  /// Write and send quotes and invoices.
+  BILLING
+  /// Edit client notes and archive clients.
+  CLIENTS
+  /// Change services, hours, availability, documents, and the storefront.
+  STOREFRONT
 }
 
 enum BusinessStatus {
@@ -137,6 +163,9 @@ model Business {
 
   clients Client[]
 
+  /// Subscription tier; caps the number of seats. See `PlanTier`.
+  plan PlanTier @default(PREMIUM)
+
   /// Monotonic invoice counter for this business.
   ///
   /// Incremented with `{ increment: 1 }`, which compiles to an in-place SQL
@@ -154,6 +183,7 @@ model Business {
   bookingHorizonDays Int    @default(30)
 
   members                BusinessMember[]
+  invitations            Invitation[]
   bookings               Booking[]
   quotes                 Quote[]
   invoices               Invoice[]
@@ -174,20 +204,57 @@ model Business {
 /// A person's seat in a business. The subscription tier caps how many of
 /// these may exist (1 on Pro, 8 on Premium).
 model BusinessMember {
-  id         String       @id @default(cuid())
-  businessId String
-  business   Business     @relation(fields: [businessId], references: [id], onDelete: Cascade)
-  userId     String
-  user       User         @relation(fields: [userId], references: [id], onDelete: Cascade)
-  role       BusinessRole @default(MEMBER)
+  id           String             @id @default(cuid())
+  businessId   String
+  business     Business           @relation(fields: [businessId], references: [id], onDelete: Cascade)
+  userId       String
+  user         User               @relation(fields: [userId], references: [id], onDelete: Cascade)
+  role         BusinessRole       @default(MEMBER)
+  /// Only consulted for a MEMBER; OWNER and ADMIN have every capability.
+  capabilities MemberCapability[] @default([])
 
-  assignments Booking[]
+  assignments     Booking[]
+  sentInvitations Invitation[]
 
   createdAt DateTime @default(now())
 
   @@unique([businessId, userId])
   @@index([userId])
   @@map("business_member")
+}
+
+/// A pending offer to join a business.
+///
+/// The token is the whole authorisation — anyone holding it can accept — so
+/// it is long, random, and single-use. An invitation counts against the seat
+/// limit while it is outstanding, so a business cannot over-invite and then
+/// discover it has no room once everyone accepts.
+model Invitation {
+  id         String   @id @default(cuid())
+  businessId String
+  business   Business @relation(fields: [businessId], references: [id], onDelete: Cascade)
+
+  /// Lower-cased. The invitation is only acceptable by this address.
+  email        String
+  role         BusinessRole       @default(MEMBER)
+  capabilities MemberCapability[] @default([])
+
+  /// URL-safe, from a CSPRNG. Unique so a token names exactly one invite.
+  token String @unique
+
+  invitedById String?
+  invitedBy   BusinessMember? @relation(fields: [invitedById], references: [id], onDelete: SetNull)
+
+  expiresAt  DateTime
+  acceptedAt DateTime?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  /// One outstanding invite per email per business; re-inviting refreshes it.
+  @@unique([businessId, email])
+  @@index([email])
+  @@map("invitation")
 }
 
 /// A trade the marketplace supports (plumbing, HVAC, interior cleaning, …).

@@ -9,6 +9,8 @@ import {
   annualPriceCents,
   monthlySavingCents,
   planById,
+  planTierToId,
+  seatLimit,
 } from "@/lib/plans";
 import { serverEnv } from "@/lib/env";
 
@@ -59,6 +61,20 @@ describe("plan pricing", () => {
   it("throws on an unknown plan rather than returning undefined", () => {
     // @ts-expect-error — deliberately outside the union.
     expect(() => planById("enterprise")).toThrow(/Unknown plan/);
+  });
+});
+
+describe("plan tiers", () => {
+  it("maps the database enum to the marketing id", () => {
+    expect(planTierToId("PRO")).toBe("pro");
+    expect(planTierToId("PREMIUM")).toBe("premium");
+  });
+
+  it("reads seat limits from the same plans the page shows", () => {
+    expect(seatLimit("PRO")).toBe(planById("pro").seats);
+    expect(seatLimit("PREMIUM")).toBe(planById("premium").seats);
+    expect(seatLimit("PRO")).toBe(1);
+    expect(seatLimit("PREMIUM")).toBe(8);
   });
 });
 
@@ -122,8 +138,6 @@ describe("feature comparison", () => {
     const notYetBuilt = [
       "Guaranteed bookings — Roost advertises you and sends you jobs",
       "Roost-funded advertising across search and social",
-      "Invite employees",
-      "Granular permissions per teammate",
     ];
     for (const label of notYetBuilt) {
       const feature = PLAN_FEATURES.find((entry) => entry.label === label);
@@ -144,6 +158,8 @@ describe("feature comparison", () => {
       "Assign jobs across your team",
       "Quotes and invoicing",
       "Client list and job history",
+      "Invite employees",
+      "Granular permissions per teammate",
     ];
     for (const label of shipped) {
       const feature = PLAN_FEATURES.find((entry) => entry.label === label);

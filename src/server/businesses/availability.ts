@@ -19,8 +19,9 @@ import {
   type BusinessHourInput,
 } from "@/lib/validations/scheduling";
 import {
+  MemberCapability,
   NotFoundError,
-  requireEditor,
+  requireCapability,
   requireMembership,
 } from "@/server/businesses/access";
 import { prisma } from "@/server/db";
@@ -165,7 +166,12 @@ export async function setWeeklyHours(
   businessId: string,
   hours: BusinessHourInput[],
 ): Promise<void> {
-  await requireEditor(userId, businessId, "change opening hours");
+  await requireCapability(
+    userId,
+    businessId,
+    MemberCapability.STOREFRONT,
+    "change opening hours",
+  );
   await prisma.$transaction([
     prisma.businessHour.deleteMany({ where: { businessId } }),
     prisma.businessHour.createMany({
@@ -197,7 +203,12 @@ export async function addException(
   businessId: string,
   input: AvailabilityExceptionInput,
 ): Promise<void> {
-  await requireEditor(userId, businessId, "change availability");
+  await requireCapability(
+    userId,
+    businessId,
+    MemberCapability.STOREFRONT,
+    "change availability",
+  );
   await prisma.availabilityException.upsert({
     where: {
       businessId_date: {
@@ -219,7 +230,12 @@ export async function removeException(
   businessId: string,
   exceptionId: string,
 ): Promise<void> {
-  await requireEditor(userId, businessId, "change availability");
+  await requireCapability(
+    userId,
+    businessId,
+    MemberCapability.STOREFRONT,
+    "change availability",
+  );
   await prisma.availabilityException.deleteMany({
     where: { id: exceptionId, businessId },
   });
@@ -230,7 +246,12 @@ export async function updateBookingSettings(
   businessId: string,
   input: BookingSettingsInput,
 ): Promise<void> {
-  await requireEditor(userId, businessId, "change booking settings");
+  await requireCapability(
+    userId,
+    businessId,
+    MemberCapability.STOREFRONT,
+    "change booking settings",
+  );
   await prisma.business.update({
     where: { id: businessId },
     data: {

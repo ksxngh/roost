@@ -16,8 +16,8 @@ begins.
 | 6   | Jobs & scheduling ops            | Calendar view, job assignment, day sheets, background worker                  | ✅ Done |
 | 7   | Quotes & invoicing               | Estimate → approval → invoice → payment                                       | ✅ Done |
 | 8   | Client CRM                       | Auto-built client list, history, notes, addresses                             | ✅ Done |
-| 9   | Teams & permissions              | Invites, seats, granular permissions                                          | Next    |
-| 10  | Subscriptions                    | Pro/Premium tiers, feature gating, billing                                    |         |
+| 9   | Teams & permissions              | Invites, seats, granular permissions                                          | ✅ Done |
+| 10  | Subscriptions                    | Pro/Premium tiers, feature gating, billing                                    | Next    |
 | 11  | Admin, hardening, deploy         | Moderation, verification queue, rate limits, WCAG, CD                         |         |
 
 Milestones 4 and 5 are where the marketplace becomes real — everything

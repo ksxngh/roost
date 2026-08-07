@@ -9,8 +9,9 @@ import { slugify } from "@/lib/validations/business";
 import { prisma } from "@/server/db";
 import {
   DuplicateSlugError,
+  MemberCapability,
   NotFoundError,
-  requireEditor,
+  requireCapability,
   requireMembership,
 } from "@/server/businesses/access";
 
@@ -116,7 +117,12 @@ export async function updateProfile(
   businessId: string,
   input: UpdateBusinessProfileInput,
 ): Promise<void> {
-  await requireEditor(userId, businessId, "edit this business");
+  await requireCapability(
+    userId,
+    businessId,
+    MemberCapability.STOREFRONT,
+    "edit this business",
+  );
   await prisma.business.update({
     where: { id: businessId },
     data: {
@@ -141,7 +147,12 @@ export async function updateSlug(
   businessId: string,
   slug: string,
 ): Promise<void> {
-  await requireEditor(userId, businessId, "change the storefront address");
+  await requireCapability(
+    userId,
+    businessId,
+    MemberCapability.STOREFRONT,
+    "change the storefront address",
+  );
   try {
     await prisma.business.update({ where: { id: businessId }, data: { slug } });
   } catch (error) {
@@ -158,7 +169,12 @@ export async function setCategories(
   businessId: string,
   categoryIds: string[],
 ): Promise<void> {
-  await requireEditor(userId, businessId, "change the services offered");
+  await requireCapability(
+    userId,
+    businessId,
+    MemberCapability.STOREFRONT,
+    "change the services offered",
+  );
   const known = await prisma.serviceCategory.findMany({
     where: { id: { in: categoryIds } },
     select: { id: true },
@@ -179,7 +195,12 @@ export async function addServiceArea(
   businessId: string,
   area: ServiceAreaInput,
 ): Promise<void> {
-  await requireEditor(userId, businessId, "change the areas served");
+  await requireCapability(
+    userId,
+    businessId,
+    MemberCapability.STOREFRONT,
+    "change the areas served",
+  );
   try {
     await prisma.serviceArea.create({ data: { businessId, ...area } });
   } catch (error) {
@@ -193,7 +214,12 @@ export async function removeServiceArea(
   businessId: string,
   areaId: string,
 ): Promise<void> {
-  await requireEditor(userId, businessId, "change the areas served");
+  await requireCapability(
+    userId,
+    businessId,
+    MemberCapability.STOREFRONT,
+    "change the areas served",
+  );
   // Scoped by businessId so an id from another business cannot be deleted.
   await prisma.serviceArea.deleteMany({ where: { id: areaId, businessId } });
 }
@@ -261,7 +287,12 @@ export async function submitForReview(
   userId: string,
   businessId: string,
 ): Promise<void> {
-  await requireEditor(userId, businessId, "submit this business for review");
+  await requireCapability(
+    userId,
+    businessId,
+    MemberCapability.STOREFRONT,
+    "submit this business for review",
+  );
   const checks = await storefrontReadiness(userId, businessId);
   const missing = checks.filter((check) => !check.done);
   if (missing.length > 0) {

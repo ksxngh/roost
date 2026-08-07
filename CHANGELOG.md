@@ -4,6 +4,40 @@ All notable changes are documented here. Format follows
 [Keep a Changelog](https://keepachangelog.com/); versions follow semver
 (pre-1.0: minor = milestone).
 
+## [0.14.0] — 2026-08-05 · Milestone 9: Teams & permissions
+
+Invite a team, cap it to the plan's seats, and grant each member exactly what
+they should be able to do.
+
+### Added
+
+- **Invitations**: invite by email with a role and, for members, a set of
+  capabilities. A CSPRNG token is emailed and never listed back; accepting
+  requires the signed-in email to match the invited address.
+- **Granular capabilities** — `SCHEDULE`, `BILLING`, `CLIENTS`, `STOREFRONT`.
+  OWNER and ADMIN hold all four; a MEMBER holds only what is granted. Every
+  mutation gate moved from `requireEditor` to `requireCapability`.
+- **Plan-based seat limits** (1 on Pro, 8 on Premium), enforced at invite
+  time counting pending invites, and again inside the accept transaction so a
+  team cannot overflow through a race.
+- **Team management** (`/settings/team`): invite, revoke, change a member's
+  role and capabilities, remove, with rank rules that stop an admin escalating
+  itself or touching the owner. Ownership transfer exists at the service layer.
+- `/invite/<token>` accept page.
+- 48 new tests.
+
+### Changed
+
+- `requireEditor` now means only "admin or owner" and guards team management
+  alone. The pricing page's "Invite employees" and "Granular permissions"
+  rows flip from Soon to live.
+
+### Notes
+
+- Billing is still Milestone 10, so a new business defaults to the Premium
+  tier — nobody is charged yet, so gating team features behind an impossible
+  payment would help no one.
+
 ## [0.13.0] — 2026-08-05 · Milestone 8: Client CRM
 
 The client list builds itself from the work, with no "add client" button.

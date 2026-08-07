@@ -1,8 +1,9 @@
 import type { ClientModel } from "@/generated/prisma/models";
 import { BookingStatus, InvoiceStatus } from "@/generated/prisma/enums";
 import {
+  MemberCapability,
   NotFoundError,
-  requireEditor,
+  requireCapability,
   requireMembership,
 } from "@/server/businesses/access";
 import { prisma } from "@/server/db";
@@ -254,7 +255,12 @@ export async function setClientNotes(
   clientId: string,
   notes: string | null,
 ): Promise<void> {
-  await requireEditor(userId, businessId, "edit a client");
+  await requireCapability(
+    userId,
+    businessId,
+    MemberCapability.CLIENTS,
+    "edit a client",
+  );
   const { count } = await prisma.client.updateMany({
     where: { id: clientId, businessId },
     data: { notes: notes?.trim() || null },
@@ -275,7 +281,12 @@ export async function setClientArchived(
   clientId: string,
   archived: boolean,
 ): Promise<void> {
-  await requireEditor(userId, businessId, "archive a client");
+  await requireCapability(
+    userId,
+    businessId,
+    MemberCapability.CLIENTS,
+    "archive a client",
+  );
   const { count } = await prisma.client.updateMany({
     where: { id: clientId, businessId },
     data: { archivedAt: archived ? new Date() : null },

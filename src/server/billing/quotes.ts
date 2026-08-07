@@ -6,8 +6,9 @@ import { documentTotals } from "@/lib/money";
 import { generateReference } from "@/lib/validations/booking";
 import type { QuoteInput } from "@/lib/validations/billing";
 import {
+  MemberCapability,
   NotFoundError,
-  requireEditor,
+  requireCapability,
   requireMembership,
 } from "@/server/businesses/access";
 import { linkClient } from "@/server/businesses/clients";
@@ -65,7 +66,12 @@ export async function createQuote(
   businessId: string,
   input: QuoteInput,
 ): Promise<QuoteModel> {
-  await requireEditor(userId, businessId, "write a quote");
+  await requireCapability(
+    userId,
+    businessId,
+    MemberCapability.BILLING,
+    "write a quote",
+  );
 
   // The client record is derived from the document, not chosen on a form.
   const clientId = await linkClient(businessId, {
@@ -117,7 +123,12 @@ export async function updateQuote(
   quoteId: string,
   input: QuoteInput,
 ): Promise<void> {
-  await requireEditor(userId, businessId, "edit a quote");
+  await requireCapability(
+    userId,
+    businessId,
+    MemberCapability.BILLING,
+    "edit a quote",
+  );
 
   const quote = await prisma.quote.findFirst({
     where: { id: quoteId, businessId },
@@ -153,7 +164,12 @@ export async function sendQuote(
   businessId: string,
   quoteId: string,
 ): Promise<QuoteModel> {
-  await requireEditor(userId, businessId, "send a quote");
+  await requireCapability(
+    userId,
+    businessId,
+    MemberCapability.BILLING,
+    "send a quote",
+  );
 
   const quote = await prisma.quote.findFirst({
     where: { id: quoteId, businessId },
@@ -175,7 +191,12 @@ export async function deleteQuote(
   businessId: string,
   quoteId: string,
 ): Promise<void> {
-  await requireEditor(userId, businessId, "delete a quote");
+  await requireCapability(
+    userId,
+    businessId,
+    MemberCapability.BILLING,
+    "delete a quote",
+  );
   const quote = await prisma.quote.findFirst({
     where: { id: quoteId, businessId },
     select: { id: true, status: true },

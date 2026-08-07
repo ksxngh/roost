@@ -6,8 +6,9 @@ import { documentTotals } from "@/lib/money";
 import { generateReference } from "@/lib/validations/booking";
 import type { InvoiceInput } from "@/lib/validations/billing";
 import {
+  MemberCapability,
   NotFoundError,
-  requireEditor,
+  requireCapability,
   requireMembership,
 } from "@/server/businesses/access";
 import { linkClient } from "@/server/businesses/clients";
@@ -86,7 +87,12 @@ export async function createInvoice(
   input: InvoiceInput,
   links: { quoteId?: string; bookingId?: string } = {},
 ): Promise<InvoiceModel> {
-  await requireEditor(userId, businessId, "raise an invoice");
+  await requireCapability(
+    userId,
+    businessId,
+    MemberCapability.BILLING,
+    "raise an invoice",
+  );
 
   const clientId = await linkClient(businessId, {
     email: input.customerEmail,
@@ -143,7 +149,12 @@ export async function invoiceFromQuote(
   businessId: string,
   quoteId: string,
 ): Promise<InvoiceModel> {
-  await requireEditor(userId, businessId, "raise an invoice");
+  await requireCapability(
+    userId,
+    businessId,
+    MemberCapability.BILLING,
+    "raise an invoice",
+  );
 
   const quote = await prisma.quote.findFirst({
     where: { id: quoteId, businessId },
@@ -187,7 +198,12 @@ export async function updateInvoice(
   invoiceId: string,
   input: InvoiceInput,
 ): Promise<void> {
-  await requireEditor(userId, businessId, "edit an invoice");
+  await requireCapability(
+    userId,
+    businessId,
+    MemberCapability.BILLING,
+    "edit an invoice",
+  );
 
   const invoice = await prisma.invoice.findFirst({
     where: { id: invoiceId, businessId },
@@ -222,7 +238,12 @@ export async function sendInvoice(
   businessId: string,
   invoiceId: string,
 ): Promise<InvoiceModel> {
-  await requireEditor(userId, businessId, "send an invoice");
+  await requireCapability(
+    userId,
+    businessId,
+    MemberCapability.BILLING,
+    "send an invoice",
+  );
 
   const invoice = await prisma.invoice.findFirst({
     where: { id: invoiceId, businessId },
@@ -250,7 +271,12 @@ export async function voidInvoice(
   businessId: string,
   invoiceId: string,
 ): Promise<void> {
-  await requireEditor(userId, businessId, "void an invoice");
+  await requireCapability(
+    userId,
+    businessId,
+    MemberCapability.BILLING,
+    "void an invoice",
+  );
 
   const invoice = await prisma.invoice.findFirst({
     where: { id: invoiceId, businessId },

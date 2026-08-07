@@ -47,7 +47,7 @@ describe("PlanComparison", () => {
 
   it("marks unbuilt capability Soon instead of ticking it", () => {
     render(<PlanComparison />);
-    const row = rowFor("Invite employees");
+    const row = rowFor("Roost-funded advertising");
 
     expect(within(row).getAllByText("Soon").length).toBeGreaterThan(0);
     expect(within(row).queryByText("Included")).not.toBeInTheDocument();
@@ -55,9 +55,9 @@ describe("PlanComparison", () => {
 
   it("ticks a capability once it ships", () => {
     render(<PlanComparison />);
-    const row = rowFor("Client list and job history");
+    const row = rowFor("Assign jobs across your team");
 
-    expect(within(row).getAllByText("Included").length).toBe(2);
+    expect(within(row).getAllByText("Included").length).toBe(1);
     expect(within(row).queryByText("Soon")).not.toBeInTheDocument();
   });
 

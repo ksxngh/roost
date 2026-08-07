@@ -133,8 +133,8 @@ export const PLAN_FEATURES: readonly PlanFeature[] = [
     premiumText: "Up to 8 seats",
   },
   { label: "Assign jobs across your team", pro: false, premium: "live" },
-  { label: "Invite employees", pro: false, premium: "soon" },
-  { label: "Granular permissions per teammate", pro: false, premium: "soon" },
+  { label: "Invite employees", pro: false, premium: "live" },
+  { label: "Granular permissions per teammate", pro: false, premium: "live" },
   {
     label: "Support",
     pro: "live",
@@ -153,4 +153,18 @@ export function planById(id: PlanId): Plan {
   const plan = PLANS.find((candidate) => candidate.id === id);
   if (!plan) throw new Error(`Unknown plan: ${id}`);
   return plan;
+}
+
+/**
+ * The database stores the plan as a `PlanTier` enum (`PRO`/`PREMIUM`); the
+ * marketing layer keys everything by the lowercase `PlanId`. This bridges
+ * the two so seat limits and prices have one source.
+ */
+export function planTierToId(tier: "PRO" | "PREMIUM"): PlanId {
+  return tier === "PRO" ? "pro" : "premium";
+}
+
+/** How many seats a plan tier includes. */
+export function seatLimit(tier: "PRO" | "PREMIUM"): number {
+  return planById(planTierToId(tier)).seats;
 }
