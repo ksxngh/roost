@@ -17,10 +17,16 @@ by us — the money never passes through a Roost account
 
 ## Positioning
 
-Benchmarked against Padpal, checked at padpal.com/pricing on 4 August 2026:
+Benchmarked internally against Padpal (padpal.com/pricing, 4 August 2026):
 **$144.99** Pro, **$229.99** Premium, **9%** marketplace fee.
 
 Roost undercuts each tier by **$15.00/month** and takes **8%** rather than 9%.
+
+The comparison stays _internal_. The public page states our own numbers and
+never names a competitor: a rival's prices change without warning, and a page
+that quotes them is one silent edit away from being wrong in a way customers
+notice. `plans.ts` keeps `competitorPriceCents` so the positioning test can
+still fail if we ever drift above them.
 
 The take rate matters as much as the sticker price. Undercutting the
 subscription by $15 while charging a *higher* percentage would lose the
@@ -61,5 +67,3 @@ marked `live`. When a milestone ships, that list is the thing to update.
   published intention, not a limit the code applies. That is Milestone 10.
 - **No annual checkout.** The annual price is quoted; only monthly is
   described in the flow.
-- **No trial.** Padpal does not advertise one either, but it is the obvious
-  next lever if signup conversion is weak.

@@ -13,11 +13,9 @@ import {
 } from "@/components/ui/card";
 import {
   ANNUAL_MONTHS_CHARGED,
-  COMPETITOR_FEE_BPS,
   MARKETPLACE_FEE_BPS,
   PLANS,
   annualPriceCents,
-  monthlySavingCents,
 } from "@/lib/plans";
 import { siteConfig } from "@/lib/site-config";
 import { formatPrice } from "@/lib/validations/scheduling";
@@ -71,11 +69,6 @@ export default function PricingPage() {
                 </p>
               </div>
 
-              <p className="text-sm text-emerald-600 dark:text-emerald-400">
-                {formatPrice(monthlySavingCents(plan))}
-                {" a month less than Padpal's comparable plan."}
-              </p>
-
               <p className="text-muted-foreground text-sm">
                 Or {formatPrice(annualPriceCents(plan))} a year — pay for{" "}
                 {ANNUAL_MONTHS_CHARGED} months, get 12.
@@ -114,7 +107,6 @@ export default function PricingPage() {
               <CardDescription>
                 Only on jobs {siteConfig.name} brings you. Work you booked
                 yourself and put through {siteConfig.name} costs nothing extra.
-                Padpal charges {percent(COMPETITOR_FEE_BPS)}.
               </CardDescription>
             </CardHeader>
           </Card>
@@ -133,8 +125,7 @@ export default function PricingPage() {
       </section>
 
       <p className="text-muted-foreground text-center text-xs">
-        Prices in Canadian dollars. Padpal&apos;s pricing quoted from
-        padpal.com/pricing as published on 4 August 2026 and may change.
+        All prices in Canadian dollars, excluding tax.
       </p>
     </main>
   );
