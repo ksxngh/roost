@@ -97,6 +97,22 @@ enum PlanTier {
   PREMIUM
 }
 
+/// The billing state of a business's subscription, mirrored from Stripe.
+/// Only ACTIVE and TRIALING permit paid-tier features; the rest are a paid
+/// account that has lapsed and must be treated as unpaid.
+enum SubscriptionStatus {
+  /// Paid and current.
+  ACTIVE
+  /// In a trial that has not yet converted.
+  TRIALING
+  /// A payment failed; Stripe is retrying. Access is kept briefly.
+  PAST_DUE
+  /// Ended — cancelled, or dunning exhausted.
+  CANCELED
+  /// Checkout started but the first payment never completed.
+  INCOMPLETE
+}
+
 /// Seat role within one business. Owners can never be removed or demoted by
 /// another member; that guarantee is enforced in the service layer.
 enum BusinessRole {
@@ -161,9 +177,12 @@ model Business {
   stripePayoutsEnabled   Boolean @default(false)
   stripeDetailsSubmitted Boolean @default(false)
 
-  clients Client[]
+  clients      Client[]
+  subscription Subscription?
 
-  /// Subscription tier; caps the number of seats. See `PlanTier`.
+  /// Effective subscription tier; caps the number of seats. Written from the
+  /// subscription when one exists, and read on every seat check. See
+  /// `PlanTier` and docs/subscriptions.md.
   plan PlanTier @default(PREMIUM)
 
   /// Monotonic invoice counter for this business.
@@ -255,6 +274,37 @@ model Invitation {
   @@unique([businessId, email])
   @@index([email])
   @@map("invitation")
+}
+
+/// A business's billing relationship with Roost.
+///
+/// One per business. Stripe is the source of truth for status and period; this
+/// row is a cache written only from a verified webhook or an explicit refresh,
+/// never from the browser returning from checkout. `Business.plan` is set from
+/// `tier` here whenever the subscription is in a paying state.
+model Subscription {
+  id         String   @id @default(cuid())
+  businessId String   @unique
+  business   Business @relation(fields: [businessId], references: [id], onDelete: Cascade)
+
+  /// The Stripe Customer for this business; reused across subscriptions.
+  stripeCustomerId     String  @unique
+  /// Null between cancellation and a new checkout.
+  stripeSubscriptionId String? @unique
+
+  tier   PlanTier
+  status SubscriptionStatus
+
+  /// End of the paid period. After this, an unpaid subscription lapses.
+  currentPeriodEnd  DateTime?
+  /// Set when the customer has asked to cancel at period end rather than now.
+  cancelAtPeriodEnd Boolean   @default(false)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([status])
+  @@map("subscription")
 }
 
 /// A trade the marketplace supports (plumbing, HVAC, interior cleaning, …).

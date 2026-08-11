@@ -4,6 +4,46 @@ All notable changes are documented here. Format follows
 [Keep a Changelog](https://keepachangelog.com/); versions follow semver
 (pre-1.0: minor = milestone).
 
+## [0.15.0] — 2026-08-10 · Milestone 10: Subscriptions
+
+Roost earns its own revenue: providers subscribe to a plan tier through Stripe
+Billing. Distinct from Connect payments (money for a booking) and invoicing (a
+provider billing a client) — here Roost is the merchant.
+
+### Added
+
+- **`Subscription`** model — one per business, mirroring Stripe: `tier`,
+  `status` (`ACTIVE`/`TRIALING`/`PAST_DUE`/`CANCELED`/`INCOMPLETE`),
+  `currentPeriodEnd`, `cancelAtPeriodEnd`, and the unique Stripe customer and
+  subscription ids.
+- **Checkout** (`/settings/billing`) — monthly or annual, Pro or Premium, via a
+  Stripe Checkout session in subscription mode. A per-business Stripe customer
+  is created once and reused. Owner-only.
+- **Billing portal** — owners update the card or cancel; configured for
+  cancellation and payment method only, not plan switching.
+- **Seat-aware downgrade guard** — checkout refuses a plan whose seats are
+  fewer than the current team size, the one place a plan change is initiated.
+- **Webhook-driven entitlement** — `customer.subscription.created/updated/
+  deleted` set `Business.plan` from the subscription's paying status; a
+  customer-ownership check rejects spoofed `metadata.businessId`. State is only
+  ever written from the verified, idempotent webhook, never the redirect.
+- **Graceful degradation** — without the `STRIPE_PRICE_*` env vars the billing
+  page renders a read-only "not available on this deployment" state; nothing
+  throws.
+- `docs/subscriptions.md`; 41 new tests.
+
+### Changed
+
+- `checkout.session.completed` in the webhook now branches on `mode`:
+  subscription sessions are acknowledged and left to the subscription events.
+
+### Notes
+
+- Live billing needs real Stripe price IDs and a webhook secret, supplied by
+  the deployer. `DEFAULT_PLAN` remains Premium during the pre-billing phase;
+  going live flips it to a restricted default or requires checkout at
+  onboarding.
+
 ## [0.14.0] — 2026-08-05 · Milestone 9: Teams & permissions
 
 Invite a team, cap it to the plan's seats, and grant each member exactly what

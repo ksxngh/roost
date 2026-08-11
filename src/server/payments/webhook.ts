@@ -1,5 +1,9 @@
 import { PaymentStatus } from "@/generated/prisma/enums";
 import { markInvoicePaid } from "@/server/billing/invoices";
+import {
+  applyStripeSubscription,
+  cancelStripeSubscription,
+} from "@/server/billing/subscription";
 import { prisma } from "@/server/db";
 
 /** Events this application acts on. Anything else is acknowledged and dropped. */
@@ -9,7 +13,17 @@ const HANDLED = new Set([
   "checkout.session.async_payment_failed",
   "charge.refunded",
   "account.updated",
+  "customer.subscription.created",
+  "customer.subscription.updated",
+  "customer.subscription.deleted",
 ]);
+
+/** Pull the first price id off a Stripe subscription's items array. */
+function firstPriceId(object: Record<string, unknown>): string | null {
+  const items = (object.items as { data?: unknown[] } | undefined)?.data;
+  const first = items?.[0] as { price?: { id?: string } } | undefined;
+  return first?.price?.id ?? null;
+}
 
 export type StripeEvent = {
   id: string;
@@ -59,6 +73,13 @@ export async function handleStripeEvent(
 
   switch (event.type) {
     case "checkout.session.completed": {
+      // A subscription checkout also completes here, but the subscription's own
+      // events carry the status and period and do the real work, so this is
+      // acknowledged and left alone.
+      if (object.mode === "subscription") {
+        return { handled: true, action: "subscription-checkout" };
+      }
+
       const sessionId = String(object.id ?? "");
       const paymentIntentId =
         typeof object.payment_intent === "string"
@@ -158,6 +179,32 @@ export async function handleStripeEvent(
       });
       if (count === 0) return { handled: false, reason: "unknown-target" };
       return { handled: true, action: "account-updated" };
+    }
+
+    case "customer.subscription.created":
+    case "customer.subscription.updated": {
+      const { applied } = await applyStripeSubscription({
+        id: String(object.id ?? ""),
+        customerId: String(object.customer ?? ""),
+        status: String(object.status ?? ""),
+        priceId: firstPriceId(object),
+        currentPeriodEnd:
+          typeof object.current_period_end === "number"
+            ? object.current_period_end
+            : null,
+        cancelAtPeriodEnd: Boolean(object.cancel_at_period_end),
+        metadata: asRecord(object.metadata) as Record<string, string>,
+      });
+      if (!applied) return { handled: false, reason: "unknown-target" };
+      return { handled: true, action: "subscription-updated" };
+    }
+
+    case "customer.subscription.deleted": {
+      const { applied } = await cancelStripeSubscription(
+        String(object.id ?? ""),
+      );
+      if (!applied) return { handled: false, reason: "unknown-target" };
+      return { handled: true, action: "subscription-canceled" };
     }
 
     default:

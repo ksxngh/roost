@@ -52,6 +52,38 @@ export interface StripeGateway {
     idempotencyKey: string;
   }): Promise<{ id: string }>;
 
+  // ── Subscriptions (platform billing, not Connect) ──────────────────────
+
+  /**
+   * Find or create the Stripe Customer for a business.
+   *
+   * Reused across subscriptions so a business that cancels and re-subscribes
+   * keeps one customer and one billing history.
+   */
+  ensureCustomer(input: {
+    businessId: string;
+    email: string | null;
+    name: string;
+    existingCustomerId: string | null;
+  }): Promise<{ id: string }>;
+
+  /** A hosted Checkout session in subscription mode. */
+  createSubscriptionCheckout(input: {
+    customerId: string;
+    priceId: string;
+    successUrl: string;
+    cancelUrl: string;
+    /** Echoed to the webhook so it can find the business and intended tier. */
+    metadata: Record<string, string>;
+    idempotencyKey: string;
+  }): Promise<{ id: string; url: string }>;
+
+  /** A Stripe Billing Portal session for managing an existing subscription. */
+  createBillingPortalSession(input: {
+    customerId: string;
+    returnUrl: string;
+  }): Promise<{ url: string }>;
+
   /**
    * Verify and parse a webhook payload.
    *
@@ -182,6 +214,47 @@ export function createStripeGateway(env = serverEnv()): StripeGateway {
         { stripeAccount: accountId, idempotencyKey },
       );
       return { id: refund.id };
+    },
+
+    async ensureCustomer({ businessId, email, name, existingCustomerId }) {
+      if (existingCustomerId) return { id: existingCustomerId };
+      const customer = await stripe.customers.create({
+        email: email ?? undefined,
+        name,
+        // Lets the business be found in the Stripe dashboard from our id.
+        metadata: { businessId },
+      });
+      return { id: customer.id };
+    },
+
+    async createSubscriptionCheckout(input) {
+      const session = await stripe.checkout.sessions.create(
+        {
+          mode: "subscription",
+          customer: input.customerId,
+          line_items: [{ price: input.priceId, quantity: 1 }],
+          // Carry the business and tier onto the subscription itself, so the
+          // subscription webhooks (which do not see the session) can resolve
+          // them.
+          subscription_data: { metadata: input.metadata },
+          metadata: input.metadata,
+          success_url: input.successUrl,
+          cancel_url: input.cancelUrl,
+        },
+        { idempotencyKey: input.idempotencyKey },
+      );
+      if (!session.url) {
+        throw new Error("Stripe returned a checkout session with no URL");
+      }
+      return { id: session.id, url: session.url };
+    },
+
+    async createBillingPortalSession({ customerId, returnUrl }) {
+      const session = await stripe.billingPortal.sessions.create({
+        customer: customerId,
+        return_url: returnUrl,
+      });
+      return { url: session.url };
     },
 
     constructEvent(payload, signature) {

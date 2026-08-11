@@ -1,6 +1,6 @@
 # Architecture
 
-## Current state (after Milestone 9)
+## Current state (after Milestone 10)
 
 Roost is a single Next.js application backed by PostgreSQL, Redis, and an
 object store. The App Router serves three surfaces from one deployable: the
@@ -61,7 +61,10 @@ round-trip tests cannot see ([operations.md](operations.md#timezones-and-the-dat
 A fourth arrives with payments: **Stripe is authoritative about money**. A
 payment is only marked received when a signature-verified webhook says so —
 never because a browser came back from checkout. See
-[payments.md](payments.md).
+[payments.md](payments.md). The same rule governs platform **subscriptions**
+(Milestone 10): a business's plan entitlement is written only from the verified
+`customer.subscription.*` webhook, and the checkout redirect just returns the
+owner to the billing page — see [subscriptions.md](subscriptions.md).
 
 ## Target architecture
 

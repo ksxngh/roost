@@ -68,6 +68,21 @@ function fakeStripe(overrides: Partial<StripeGateway> = {}) {
       seq += 1;
       return { id: `re_test_${seq}` };
     },
+    async ensureCustomer({ existingCustomerId }) {
+      seq += 1;
+      return { id: existingCustomerId ?? `cus_test_${seq}` };
+    },
+    async createSubscriptionCheckout(input) {
+      seq += 1;
+      return {
+        id: `cs_sub_${seq}`,
+        url: `https://checkout.stripe.test/sub/${seq}`,
+        ...input,
+      };
+    },
+    async createBillingPortalSession() {
+      return { url: "https://billing.stripe.test/portal" };
+    },
     constructEvent() {
       throw new Error("not used in these tests");
     },

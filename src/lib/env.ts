@@ -63,6 +63,14 @@ const serverSchema = z.object({
     .min(0)
     .max(3000, "a fee above 30% is almost certainly a typo")
     .default(800),
+
+  // Subscription price ids from the Stripe dashboard. Subscriptions are only
+  // available when the two tiers' monthly ids are present; the annual ids are
+  // optional. See docs/subscriptions.md.
+  STRIPE_PRICE_PRO_MONTHLY: z.string().min(1).optional(),
+  STRIPE_PRICE_PRO_ANNUAL: z.string().min(1).optional(),
+  STRIPE_PRICE_PREMIUM_MONTHLY: z.string().min(1).optional(),
+  STRIPE_PRICE_PREMIUM_ANNUAL: z.string().min(1).optional(),
 });
 
 const clientSchema = z.object({

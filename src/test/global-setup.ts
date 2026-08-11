@@ -16,6 +16,12 @@ export default function setup() {
   process.env.DATABASE_URL = url;
   process.env.BETTER_AUTH_SECRET ??= "test-secret-test-secret-test-secret-42";
 
+  // Subscription price ids, so the billing layer runs its configured path.
+  process.env.STRIPE_PRICE_PRO_MONTHLY ??= "price_pro_m";
+  process.env.STRIPE_PRICE_PRO_ANNUAL ??= "price_pro_a";
+  process.env.STRIPE_PRICE_PREMIUM_MONTHLY ??= "price_prem_m";
+  process.env.STRIPE_PRICE_PREMIUM_ANNUAL ??= "price_prem_a";
+
   // Apply the committed migrations (not `db push`) so tests exercise the
   // exact schema that ships to production.
   execSync("npx prisma migrate deploy", {

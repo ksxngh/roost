@@ -5,9 +5,10 @@ run their business with. Homeowners find a licensed, insured pro and book
 them; the pro gets scheduling, quotes, invoicing, and a client list in the
 same account.
 
-> **Status:** Milestone 9 complete — team invitations, plan-based seat
-> limits, and granular per-teammate permissions. Milestone 10 wires up
-> subscription billing. See [docs/roadmap.md](docs/roadmap.md).
+> **Status:** Milestone 10 complete — subscription billing via Stripe
+> Billing: Pro/Premium tiers, owner-only checkout with a seat-aware downgrade
+> guard, and webhook-driven entitlement. Milestone 11 is admin, hardening, and
+> deploy. See [docs/roadmap.md](docs/roadmap.md).
 
 ## Stack
 
@@ -121,6 +122,7 @@ docs/             # Architecture, ADRs, roadmap, auth, database, storefront, tes
 - [Clients](docs/clients.md)
 - [Teams & permissions](docs/teams.md)
 - [Quotes & invoicing](docs/billing.md)
+- [Subscriptions](docs/subscriptions.md)
 - [Running the work](docs/operations.md)
 - [Roadmap](docs/roadmap.md)
 - [Testing](docs/testing.md)

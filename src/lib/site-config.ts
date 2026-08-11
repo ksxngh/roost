@@ -77,6 +77,11 @@ export const settingsNav: NavItem[] = [
 /** Sub-pages of Settings, listed on the settings index. */
 export const settingsSections = [
   {
+    title: "Billing",
+    href: "/settings/billing",
+    description: "Your plan, seats, and subscription.",
+  },
+  {
     title: "Team",
     href: "/settings/team",
     description: "Invite teammates and set what each person can do.",

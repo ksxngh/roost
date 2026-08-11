@@ -26,6 +26,7 @@ erDiagram
     business ||--o{ booking : receives
     service_package ||--o{ booking : "sold as"
     booking ||--o| payment : "paid by"
+    business ||--o| subscription : "pays Roost via"
     business ||--o{ quote : issues
     business ||--o{ invoice : issues
     quote ||--o{ quote_line : "priced by"
@@ -113,6 +114,16 @@ erDiagram
         enum status "PENDING SUCCEEDED FAILED REFUNDED"
         int refundedCents
         datetime paidAt
+    }
+    subscription {
+        string id PK
+        string businessId UK "one per business"
+        string stripeCustomerId UK
+        string stripeSubscriptionId UK "null until checkout completes"
+        enum tier "PRO PREMIUM"
+        enum status "ACTIVE TRIALING PAST_DUE CANCELED INCOMPLETE"
+        datetime currentPeriodEnd "mirror of Stripe; not in any constraint"
+        boolean cancelAtPeriodEnd
     }
     quote {
         string id PK
