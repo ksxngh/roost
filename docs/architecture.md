@@ -1,10 +1,12 @@
 # Architecture
 
-## Current state (after Milestone 10)
+## Current state (after Milestone 11a)
 
 Roost is a single Next.js application backed by PostgreSQL, Redis, and an
-object store. The App Router serves three surfaces from one deployable: the
-public marketplace, the auth pages, and the session-protected provider app.
+object store. The App Router serves four surfaces from one deployable: the
+public marketplace, the auth pages, the session-protected provider app, and the
+platform-operator admin surface (`/admin`, gated on a platform role — see
+[admin.md](admin.md)).
 
 ```mermaid
 flowchart LR

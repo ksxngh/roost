@@ -4,6 +4,45 @@ All notable changes are documented here. Format follows
 [Keep a Changelog](https://keepachangelog.com/); versions follow semver
 (pre-1.0: minor = milestone).
 
+## [0.16.0] — 2026-08-10 · Milestone 11a: Admin & verification queue
+
+The marketplace can finally publish a business. A platform-operator surface at
+`/admin` turns a submitted business into a listed one — and can pull it back.
+
+### Added
+
+- **Platform roles** — `PlatformRole` (`USER`/`STAFF`/`ADMIN`) on the user,
+  orthogonal to per-business roles. STAFF read the queue; ADMIN decides. Ranked
+  by one pure `meetsPlatformRole` check. Granted only out of band via
+  `npm run grant-admin` — no in-app path, so an app account can't escalate.
+- **Verification queue** (`/admin/verification`) — pending businesses oldest
+  first, each opening to a review page with the business's details, its
+  licence/insurance documents, and full moderation history.
+- **Moderation workflow** — approve (→ ACTIVE, stamps `verifiedAt`), reject
+  (→ DRAFT), suspend (→ SUSPENDED), reinstate (→ ACTIVE). A transition table
+  makes every decision status-checked, so the UI only offers valid actions and
+  the service can't be driven into an illegal move. Status change, verification
+  stamp, and audit row commit in one transaction guarded by the current status.
+- **`BusinessReview`** — an append-only audit trail: one row per decision with
+  reviewer, action, from/to status, and reason; never updated or deleted, and
+  retained (`SetNull`) even if the reviewer's account is later removed.
+- **Admin document proxy** (`/api/admin/documents/[id]`) — serves any
+  business's credentials to a reviewer, gated on platform role, with the same
+  forced-download/`nosniff`/`no-store` hardening as the provider route; 404 to
+  non-reviewers.
+- **Outcome emails** to the business on approve/reject/suspend/reinstate, sent
+  only after the decision commits.
+- `docs/admin.md`; 11 new tests.
+
+### Changed
+
+- Provider app menu shows an **Admin** link to staff and admins.
+
+### Notes
+
+- A suspend/reinstate keeps the original `verifiedAt` — verification is a fact
+  about when credentials were checked, not undone by a suspension.
+
 ## [0.15.0] — 2026-08-10 · Milestone 10: Subscriptions
 
 Roost earns its own revenue: providers subscribe to a plan tier through Stripe

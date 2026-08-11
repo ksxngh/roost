@@ -27,6 +27,7 @@ erDiagram
     service_package ||--o{ booking : "sold as"
     booking ||--o| payment : "paid by"
     business ||--o| subscription : "pays Roost via"
+    business ||--o{ business_review : "moderated by"
     business ||--o{ quote : issues
     business ||--o{ invoice : issues
     quote ||--o{ quote_line : "priced by"
@@ -124,6 +125,16 @@ erDiagram
         enum status "ACTIVE TRIALING PAST_DUE CANCELED INCOMPLETE"
         datetime currentPeriodEnd "mirror of Stripe; not in any constraint"
         boolean cancelAtPeriodEnd
+    }
+    business_review {
+        string id PK
+        string businessId FK
+        string reviewerId FK "nullable, SetNull; the acting admin"
+        enum action "APPROVE REJECT SUSPEND REINSTATE"
+        enum fromStatus "snapshot before"
+        enum toStatus "snapshot after"
+        string note "reason shown to the business"
+        datetime createdAt "append-only; never updated"
     }
     quote {
         string id PK

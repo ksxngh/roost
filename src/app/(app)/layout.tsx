@@ -1,6 +1,8 @@
 import { redirect } from "next/navigation";
 
 import { AppShell } from "@/components/shell/app-shell";
+import { PlatformRole } from "@/generated/prisma/enums";
+import { meetsPlatformRole, platformRoleOf } from "@/server/admin/access";
 import { currentMembership } from "@/server/businesses/access";
 import { requireSession } from "@/server/session";
 
@@ -21,8 +23,20 @@ export default async function AppLayout({
     redirect("/onboarding");
   }
 
+  const isStaff = meetsPlatformRole(
+    await platformRoleOf(user.id),
+    PlatformRole.STAFF,
+  );
+
   return (
-    <AppShell user={{ name: user.name, email: user.email, image: user.image }}>
+    <AppShell
+      user={{
+        name: user.name,
+        email: user.email,
+        image: user.image,
+        isStaff,
+      }}
+    >
       {children}
     </AppShell>
   );

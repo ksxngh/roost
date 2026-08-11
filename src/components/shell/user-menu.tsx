@@ -1,6 +1,6 @@
 "use client";
 
-import { LogOut, Settings } from "lucide-react";
+import { LogOut, Settings, ShieldCheck } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 
@@ -20,6 +20,8 @@ export type UserMenuUser = {
   name: string;
   email: string;
   image?: string | null;
+  /** Platform staff/admin — shows the link into the moderation surface. */
+  isStaff?: boolean;
 };
 
 function initials(name: string): string {
@@ -73,6 +75,14 @@ export function UserMenu({ user }: { user: UserMenuUser }) {
             Settings
           </Link>
         </DropdownMenuItem>
+        {user.isStaff ? (
+          <DropdownMenuItem asChild>
+            <Link href="/admin">
+              <ShieldCheck className="size-4" aria-hidden="true" />
+              Admin
+            </Link>
+          </DropdownMenuItem>
+        ) : null}
         <DropdownMenuSeparator />
         <DropdownMenuItem variant="destructive" onClick={handleSignOut}>
           <LogOut className="size-4" aria-hidden="true" />

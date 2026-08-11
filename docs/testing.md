@@ -51,7 +51,7 @@ project already pinned; the vector extension is unused for now) and
 `redis:8-alpine`
 service containers via `TEST_DATABASE_URL` and `REDIS_URL`.
 
-## Current suite (928 tests)
+## Current suite (939 tests)
 
 | Area                                                    | Coverage                                                                                                                                                                                                                                                                          |
 | ------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
@@ -71,6 +71,7 @@ service containers via `TEST_DATABASE_URL` and `REDIS_URL`.
 | `notifications/sweeps` _(integration)_                  | Reminders only for confirmed work, window boundaries, the marker left unset when mail fails so it retries, one bad address not stopping the sweep, assigned technician mailed instead of the business inbox, internal notes withheld from the customer; expiry warnings once only |
 | `queue` _(integration)_                                 | Real BullMQ delivery, job-id dedupe, retry/backoff, job-id format guard                                                                                                                                                                                                           |
 | `billing/prices` + `subscription` _(integration)_       | Price ↔ tier round-tripping, `subscriptionsConfigured` gating; customer create-and-reuse, owner-only checkout and portal, the seat-aware downgrade guard, paying-vs-cancelled entitlement mapping, and the webhook's rejection of spoofed `metadata.businessId`                    |
+| `admin/verification` _(integration)_                    | Platform-role ranking and gating, queue visibility and oldest-first ordering, each of the four moderation transitions, the stamp-once `verifiedAt`, the invalid-transition guard writing nothing, STAFF-read-vs-ADMIN-decide enforcement, and an attributable audit row with the reason emailed |
 | `rate-limit` _(integration)_                            | Limit enforcement, remaining counts, per-key isolation, TTL, window rollover (with a pinned clock)                                                                                                                                                                                |
 | `storage/local-storage`                                 | Round-trip, binary safety, atomic overwrite, missing keys, no temp-file leakage, path-traversal rejection (traversal, absolute, backslash, null byte)                                                                                                                             |
 | `OnboardingForm`                                        | Submit gating, value normalization, category cap and toggling, duplicate/removed areas, nested add-area form not submitting the outer form, server errors                                                                                                                         |

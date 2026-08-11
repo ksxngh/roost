@@ -5,10 +5,12 @@ run their business with. Homeowners find a licensed, insured pro and book
 them; the pro gets scheduling, quotes, invoicing, and a client list in the
 same account.
 
-> **Status:** Milestone 10 complete — subscription billing via Stripe
-> Billing: Pro/Premium tiers, owner-only checkout with a seat-aware downgrade
-> guard, and webhook-driven entitlement. Milestone 11 is admin, hardening, and
-> deploy. See [docs/roadmap.md](docs/roadmap.md).
+> **Status:** Milestone 11a complete — the `/admin` verification queue:
+> platform staff/admin roles, and the moderation workflow that approves,
+> rejects, suspends, and reinstates businesses (with an append-only audit
+> trail), so a submitted business can finally go live. Still ahead in
+> Milestone 11: Redis-backed auth rate limiting, a WCAG pass, and CD/deploy.
+> See [docs/roadmap.md](docs/roadmap.md).
 
 ## Stack
 
@@ -123,6 +125,7 @@ docs/             # Architecture, ADRs, roadmap, auth, database, storefront, tes
 - [Teams & permissions](docs/teams.md)
 - [Quotes & invoicing](docs/billing.md)
 - [Subscriptions](docs/subscriptions.md)
+- [Admin & moderation](docs/admin.md)
 - [Running the work](docs/operations.md)
 - [Roadmap](docs/roadmap.md)
 - [Testing](docs/testing.md)

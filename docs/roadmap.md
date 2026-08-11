@@ -18,7 +18,12 @@ begins.
 | 8   | Client CRM                       | Auto-built client list, history, notes, addresses                             | ✅ Done |
 | 9   | Teams & permissions              | Invites, seats, granular permissions                                          | ✅ Done |
 | 10  | Subscriptions                    | Pro/Premium tiers, feature gating, billing                                    | ✅ Done |
-| 11  | Admin, hardening, deploy         | Moderation, verification queue, rate limits, WCAG, CD                         |         |
+| 11  | Admin, hardening, deploy         | Moderation, verification queue, rate limits, WCAG, CD                         | 🔶 In progress |
+
+Milestone 11 is being delivered in slices: **11a — platform admin & the
+verification queue** is done (businesses can now be approved, rejected,
+suspended, and reinstated). Still to come: migrating Better Auth onto the
+shared Redis rate limiter, a WCAG pass, and CD/deploy.
 
 Milestones 4 and 5 are where the marketplace becomes real — everything
 before them exists to make sure there is something worth booking.
@@ -41,9 +46,9 @@ Deliberately deferred, tracked so it doesn't get lost:
 - **Email verification enforcement** — verification mail is sent but sign-in
   is not blocked on it. Flip once a production email provider is configured.
 - **Storage purge job** — soft-deleted records keep their stored objects.
-- **Verification review** — `submitForReview` sets `PENDING_REVIEW`; nothing
-  can set `ACTIVE` yet. The admin queue that approves, rejects, and suspends
-  businesses lands in Milestone 11; until then status changes are manual.
+- ~~**Verification review** — nothing could set a business `ACTIVE`.~~
+  **Done in Milestone 11a**: the `/admin` verification queue approves, rejects,
+  suspends, and reinstates businesses. See [admin.md](admin.md).
 - **Business switcher** — `currentMembership` returns the oldest membership.
   A user belonging to several businesses needs an explicit switcher
   (Milestone 9).

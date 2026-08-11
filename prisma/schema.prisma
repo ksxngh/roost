@@ -27,12 +27,29 @@ model User {
   sessions      Session[]
   accounts      Account[]
 
+  /// Platform-wide role, distinct from any per-business seat role. Governs the
+  /// /admin surface only; almost every user is a plain USER. Never self-serve —
+  /// granted out of band (see scripts/grant-admin.ts).
+  platformRole PlatformRole @default(USER)
+
   // --- hand-written domain back-relations ---
-  memberships BusinessMember[]
-  bookings    Booking[]
+  memberships     BusinessMember[]
+  bookings        Booking[]
+  businessReviews BusinessReview[]
 
   @@unique([email])
   @@map("user")
+}
+
+/// Platform staff level, orthogonal to `BusinessRole`. A user's platform role
+/// says nothing about their businesses and vice versa.
+enum PlatformRole {
+  /// Ordinary provider or customer. The default; no admin access.
+  USER
+  /// May read the moderation surfaces but not decide (read-only reviewer).
+  STAFF
+  /// Full moderation: approve, reject, suspend, and reinstate businesses.
+  ADMIN
 }
 
 model Session {
@@ -148,6 +165,42 @@ enum BusinessStatus {
   SUSPENDED
 }
 
+/// A moderation decision an admin took on a business. The verb, not the state:
+/// APPROVE moves a business to ACTIVE, SUSPEND to SUSPENDED, and so on.
+enum ModerationAction {
+  /// Verified and published (→ ACTIVE).
+  APPROVE
+  /// Sent back with a reason (→ DRAFT); the business fixes and resubmits.
+  REJECT
+  /// Pulled from the marketplace (→ SUSPENDED).
+  SUSPEND
+  /// Restored after a suspension (→ ACTIVE).
+  REINSTATE
+}
+
+/// Append-only audit of every moderation decision. One row per admin action,
+/// never updated or deleted, so a business's moderation history is complete
+/// and attributable. The reviewer is retained even if their user is later
+/// removed (SetNull), because the record of what happened must survive.
+model BusinessReview {
+  id         String           @id @default(cuid())
+  businessId String
+  business   Business         @relation(fields: [businessId], references: [id], onDelete: Cascade)
+  /// The admin who acted. Null only if that user was later deleted.
+  reviewerId String?
+  reviewer   User?            @relation(fields: [reviewerId], references: [id], onDelete: SetNull)
+  action     ModerationAction
+  /// Status before and after, snapshotted so the trail is self-contained.
+  fromStatus BusinessStatus
+  toStatus   BusinessStatus
+  /// Reason shown to the business on REJECT/SUSPEND; optional otherwise.
+  note       String?
+  createdAt  DateTime         @default(now())
+
+  @@index([businessId, createdAt])
+  @@map("business_review")
+}
+
 /// A home-service business — the provider side of the marketplace and the
 /// tenant boundary for all operational data (jobs, quotes, clients).
 model Business {
@@ -203,6 +256,7 @@ model Business {
 
   members                BusinessMember[]
   invitations            Invitation[]
+  reviews                BusinessReview[]
   bookings               Booking[]
   quotes                 Quote[]
   invoices               Invoice[]
