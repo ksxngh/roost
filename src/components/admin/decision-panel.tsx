@@ -36,9 +36,7 @@ const DECISIONS: Record<string, Decision[]> = {
       requiresNote: true,
     },
   ],
-  SUSPENDED: [
-    { action: "REINSTATE", label: "Reinstate", variant: "default" },
-  ],
+  SUSPENDED: [{ action: "REINSTATE", label: "Reinstate", variant: "default" }],
 };
 
 /**

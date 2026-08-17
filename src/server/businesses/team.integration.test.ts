@@ -341,7 +341,9 @@ describe("revokeInvitation", () => {
     await revokeInvitation(mine.ownerId, mine.businessId, invite.id);
 
     expect(
-      await prisma.invitation.count({ where: { businessId: theirs.businessId } }),
+      await prisma.invitation.count({
+        where: { businessId: theirs.businessId },
+      }),
     ).toBe(1);
   });
 });

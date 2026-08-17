@@ -5,11 +5,13 @@ run their business with. Homeowners find a licensed, insured pro and book
 them; the pro gets scheduling, quotes, invoicing, and a client list in the
 same account.
 
-> **Status:** Milestone 11c complete — an accessibility pass adding
-> skip-to-content links and uniquely labelled landmarks across the shells.
-> (11a delivered the `/admin` verification queue; 11b moved auth rate limiting
-> onto shared Redis.) Last slice ahead: 11d — CD/deploy. See
-> [docs/roadmap.md](docs/roadmap.md).
+> **Status:** Milestone 11 complete — the app is deployable. 11d adds the
+> production Docker images (web + worker), a CD pipeline publishing to GHCR,
+> health/readiness probes, and self-hosting compose. (11a delivered the
+> `/admin` verification queue; 11b moved auth rate limiting onto shared Redis;
+> 11c was the accessibility pass.) All eleven milestones are done — see
+> [docs/deployment.md](docs/deployment.md) to ship it, and
+> [docs/roadmap.md](docs/roadmap.md) for the journey.
 
 ## Stack
 
@@ -126,6 +128,7 @@ docs/             # Architecture, ADRs, roadmap, auth, database, storefront, tes
 - [Subscriptions](docs/subscriptions.md)
 - [Admin & moderation](docs/admin.md)
 - [Running the work](docs/operations.md)
+- [Deployment](docs/deployment.md)
 - [Roadmap](docs/roadmap.md)
 - [Testing](docs/testing.md)
 - [Decision records](docs/adr/)

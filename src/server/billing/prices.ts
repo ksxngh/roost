@@ -68,5 +68,7 @@ export function refForPriceId(
   priceId: string,
   env = serverEnv(),
 ): PriceRef | null {
-  return priceTable(env).find((entry) => entry.priceId === priceId)?.ref ?? null;
+  return (
+    priceTable(env).find((entry) => entry.priceId === priceId)?.ref ?? null
+  );
 }

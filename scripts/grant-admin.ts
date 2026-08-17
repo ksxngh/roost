@@ -17,9 +17,7 @@ import { PrismaClient } from "../src/generated/prisma/client";
 async function main() {
   const [email, roleArg = "ADMIN"] = process.argv.slice(2);
   if (!email) {
-    throw new Error(
-      "Usage: npm run grant-admin -- <email> [USER|STAFF|ADMIN]",
-    );
+    throw new Error("Usage: npm run grant-admin -- <email> [USER|STAFF|ADMIN]");
   }
 
   const role = roleArg.toUpperCase();

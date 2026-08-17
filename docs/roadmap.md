@@ -18,12 +18,14 @@ begins.
 | 8   | Client CRM                       | Auto-built client list, history, notes, addresses                             | ✅ Done |
 | 9   | Teams & permissions              | Invites, seats, granular permissions                                          | ✅ Done |
 | 10  | Subscriptions                    | Pro/Premium tiers, feature gating, billing                                    | ✅ Done |
-| 11  | Admin, hardening, deploy         | Moderation, verification queue, rate limits, WCAG, CD                         | 🔶 In progress |
+| 11  | Admin, hardening, deploy         | Moderation, verification queue, rate limits, WCAG, CD                         | ✅ Done |
 
-Milestone 11 is being delivered in slices: **11a — platform admin & the
+Milestone 11 was delivered in slices: **11a — platform admin & the
 verification queue** (approve/reject/suspend/reinstate), **11b — Redis-backed
-auth rate limiting**, and **11c — accessibility pass** (skip links, uniquely
-labelled landmarks) are done. Still to come: **11d — CD/deploy**.
+auth rate limiting**, **11c — accessibility pass** (skip links, uniquely
+labelled landmarks), and **11d — CD/deploy** (standalone Docker images for web
+and worker, a GHCR publish pipeline, health/readiness probes, and self-hosting
+compose). See [deployment.md](deployment.md).
 
 Milestones 4 and 5 are where the marketplace becomes real — everything
 before them exists to make sure there is something worth booking.

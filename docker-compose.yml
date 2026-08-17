@@ -1,0 +1,91 @@
+# Self-hosting the full stack on one host: Postgres, Redis, a one-shot
+# migration step, the web server, and the background worker.
+#
+# In a managed deployment you would drop `postgres`/`redis` and point
+# DATABASE_URL / REDIS_URL at managed services instead. Secrets come from a
+# `.env` file next to this one (see .env.example); never commit it.
+#
+#   docker compose up --build
+#
+# See docs/deployment.md.
+
+services:
+  postgres:
+    image: pgvector/pgvector:pg18
+    environment:
+      POSTGRES_USER: roost
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-roost}
+      POSTGRES_DB: roost
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD", "pg_isready", "-U", "roost"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  redis:
+    image: redis:8-alpine
+    command: ["redis-server", "--appendonly", "yes"]
+    volumes:
+      - redis-data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  # One-shot: apply migrations, then exit. Web and worker wait for it to
+  # complete so they never start against an out-of-date schema.
+  migrate:
+    build:
+      context: .
+      target: worker
+    command: ["npx", "prisma", "migrate", "deploy"]
+    env_file: .env
+    environment:
+      DATABASE_URL: postgresql://roost:${POSTGRES_PASSWORD:-roost}@postgres:5432/roost
+    depends_on:
+      postgres:
+        condition: service_healthy
+    restart: "no"
+
+  web:
+    build:
+      context: .
+      target: web
+    env_file: .env
+    environment:
+      DATABASE_URL: postgresql://roost:${POSTGRES_PASSWORD:-roost}@postgres:5432/roost
+      REDIS_URL: redis://redis:6379
+    ports:
+      - "3000:3000"
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      migrate:
+        condition: service_completed_successfully
+    restart: unless-stopped
+
+  worker:
+    build:
+      context: .
+      target: worker
+    env_file: .env
+    environment:
+      DATABASE_URL: postgresql://roost:${POSTGRES_PASSWORD:-roost}@postgres:5432/roost
+      REDIS_URL: redis://redis:6379
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      migrate:
+        condition: service_completed_successfully
+    restart: unless-stopped
+
+volumes:
+  postgres-data:
+  redis-data:

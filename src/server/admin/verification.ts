@@ -58,7 +58,11 @@ export type ReviewQueueItem = {
 export async function listReviewQueue(
   userId: string,
 ): Promise<ReviewQueueItem[]> {
-  await requirePlatformRole(userId, PlatformRole.STAFF, "view the review queue");
+  await requirePlatformRole(
+    userId,
+    PlatformRole.STAFF,
+    "view the review queue",
+  );
 
   const businesses = await prisma.business.findMany({
     where: { status: BusinessStatus.PENDING_REVIEW },
@@ -226,10 +230,7 @@ export async function moderateBusiness(
     return { status: transition.to };
   });
 
-  await sendModerationOutcome(
-    { businessId, action, note },
-    options.deps ?? {},
-  );
+  await sendModerationOutcome({ businessId, action, note }, options.deps ?? {});
 
   return result;
 }

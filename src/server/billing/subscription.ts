@@ -1,10 +1,11 @@
-import {
-  PlanTier,
-  SubscriptionStatus,
-} from "@/generated/prisma/enums";
+import { PlanTier, SubscriptionStatus } from "@/generated/prisma/enums";
 import { planTierToId, seatLimit } from "@/lib/plans";
 import { siteConfig } from "@/lib/site-config";
-import { NotFoundError, requireMembership, requireOwner } from "@/server/businesses/access";
+import {
+  NotFoundError,
+  requireMembership,
+  requireOwner,
+} from "@/server/businesses/access";
 import {
   type BillingInterval,
   priceIdFor,
@@ -202,12 +203,12 @@ export async function openBillingPortal(
   });
   if (!subscription) throw new NotFoundError("subscription");
 
-  const { url } = await (deps.gateway ?? stripeGateway()).createBillingPortalSession(
-    {
-      customerId: subscription.stripeCustomerId,
-      returnUrl: `${(deps.appUrl ?? siteConfig.url)}/settings/billing`,
-    },
-  );
+  const { url } = await (
+    deps.gateway ?? stripeGateway()
+  ).createBillingPortalSession({
+    customerId: subscription.stripeCustomerId,
+    returnUrl: `${deps.appUrl ?? siteConfig.url}/settings/billing`,
+  });
   return { url };
 }
 

@@ -84,12 +84,18 @@ beforeEach(async () => {
 
 describe("platform access", () => {
   it("ranks admin above staff above user", () => {
-    expect(meetsPlatformRole(PlatformRole.ADMIN, PlatformRole.STAFF)).toBe(true);
+    expect(meetsPlatformRole(PlatformRole.ADMIN, PlatformRole.STAFF)).toBe(
+      true,
+    );
     expect(meetsPlatformRole(PlatformRole.STAFF, PlatformRole.ADMIN)).toBe(
       false,
     );
-    expect(meetsPlatformRole(PlatformRole.USER, PlatformRole.STAFF)).toBe(false);
-    expect(meetsPlatformRole(PlatformRole.STAFF, PlatformRole.STAFF)).toBe(true);
+    expect(meetsPlatformRole(PlatformRole.USER, PlatformRole.STAFF)).toBe(
+      false,
+    );
+    expect(meetsPlatformRole(PlatformRole.STAFF, PlatformRole.STAFF)).toBe(
+      true,
+    );
   });
 
   it("requirePlatformRole throws for an under-privileged user", async () => {
@@ -116,9 +122,7 @@ describe("listReviewQueue", () => {
 
     expect(ids).toContain(first.business.id);
     expect(ids).toContain(second.business.id);
-    expect(
-      queue.every((item) => item.id !== undefined),
-    ).toBe(true);
+    expect(queue.every((item) => item.id !== undefined)).toBe(true);
     // Oldest submission first.
     expect(ids.indexOf(first.business.id)).toBeLessThan(
       ids.indexOf(second.business.id),

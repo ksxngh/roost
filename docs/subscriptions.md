@@ -12,10 +12,10 @@ Billing**.
 The two tiers and their prices live in one place — [`src/lib/plans.ts`](../src/lib/plans.ts) —
 and are rendered on the public [pricing page](pricing.md):
 
-| Tier      | Price (monthly) | Seats | Notes                          |
-| --------- | --------------- | ----- | ------------------------------ |
-| `PRO`     | $129.99 CAD     | 1     | Solo operator                  |
-| `PREMIUM` | $214.99 CAD     | 8     | Teams; Roost-sent work (soon)  |
+| Tier      | Price (monthly) | Seats | Notes                         |
+| --------- | --------------- | ----- | ----------------------------- |
+| `PRO`     | $129.99 CAD     | 1     | Solo operator                 |
+| `PREMIUM` | $214.99 CAD     | 8     | Teams; Roost-sent work (soon) |
 
 Annual billing charges ten months for twelve (the "pay for 10, get 12" line on
 the pricing page). `seatLimit(tier)` is the single source of truth for the seat
@@ -118,16 +118,16 @@ event that names no known tier is ignored.
 
 ## Where the code lives
 
-| Concern                    | File                                                |
-| -------------------------- | --------------------------------------------------- |
-| Plan tiers, prices, seats  | `src/lib/plans.ts`                                  |
-| Price ↔ tier mapping       | `src/server/billing/prices.ts`                      |
-| Subscription service       | `src/server/billing/subscription.ts`                |
-| Server actions             | `src/server/billing/subscription-actions.ts`        |
-| Stripe calls (interface)   | `src/server/payments/stripe.ts`                     |
-| Webhook dispatch           | `src/server/payments/webhook.ts`                    |
-| Billing UI                 | `src/components/billing/billing-panel.tsx`          |
-| Billing page               | `src/app/(app)/settings/billing/page.tsx`           |
+| Concern                   | File                                         |
+| ------------------------- | -------------------------------------------- |
+| Plan tiers, prices, seats | `src/lib/plans.ts`                           |
+| Price ↔ tier mapping      | `src/server/billing/prices.ts`               |
+| Subscription service      | `src/server/billing/subscription.ts`         |
+| Server actions            | `src/server/billing/subscription-actions.ts` |
+| Stripe calls (interface)  | `src/server/payments/stripe.ts`              |
+| Webhook dispatch          | `src/server/payments/webhook.ts`             |
+| Billing UI                | `src/components/billing/billing-panel.tsx`   |
+| Billing page              | `src/app/(app)/settings/billing/page.tsx`    |
 
 ## Testing
 

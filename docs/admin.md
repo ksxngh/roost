@@ -11,7 +11,7 @@ A `PlatformRole` on the user is orthogonal to the per-business `BusinessRole`.
 Being an owner of your own plumbing business says nothing about platform
 access, and being a platform admin says nothing about any business.
 
-| Role    | Can                                                         |
+| Role    | Can                                                        |
 | ------- | ---------------------------------------------------------- |
 | `USER`  | Nothing admin. The default for every account.              |
 | `STAFF` | **Read** the review queue and business detail. Cannot act. |
@@ -46,7 +46,7 @@ DRAFT ──submit──▶ PENDING_REVIEW ──approve──▶ ACTIVE ──s
 ```
 
 Each action is defined once, in a transition table keyed by the status it may
-act *from*. That is what makes the UI safe: the decision panel only shows the
+act _from_. That is what makes the UI safe: the decision panel only shows the
 buttons valid for the current status, and the service re-checks the same table,
 so an action can never move a business somewhere the workflow forbids (you
 cannot approve an already-active business, or suspend one still in review).
@@ -95,17 +95,17 @@ the database. See [`moderation-mail.ts`](../src/server/notifications/moderation-
 
 ## Where the code lives
 
-| Concern              | File                                                 |
-| -------------------- | ---------------------------------------------------- |
-| Role rank + gate     | `src/server/admin/access.ts`                         |
-| Queue, detail, decisions | `src/server/admin/verification.ts`               |
-| Server actions       | `src/server/admin/verification-actions.ts`           |
-| Outcome email        | `src/server/notifications/moderation-mail.ts`        |
-| Document proxy       | `src/app/api/admin/documents/[id]/route.ts`          |
-| Admin shell + gate   | `src/app/admin/layout.tsx`                           |
-| Queue / detail pages | `src/app/admin/verification/`                        |
-| Decision panel (UI)  | `src/components/admin/decision-panel.tsx`            |
-| Grant a role         | `scripts/grant-admin.ts`                             |
+| Concern                  | File                                          |
+| ------------------------ | --------------------------------------------- |
+| Role rank + gate         | `src/server/admin/access.ts`                  |
+| Queue, detail, decisions | `src/server/admin/verification.ts`            |
+| Server actions           | `src/server/admin/verification-actions.ts`    |
+| Outcome email            | `src/server/notifications/moderation-mail.ts` |
+| Document proxy           | `src/app/api/admin/documents/[id]/route.ts`   |
+| Admin shell + gate       | `src/app/admin/layout.tsx`                    |
+| Queue / detail pages     | `src/app/admin/verification/`                 |
+| Decision panel (UI)      | `src/components/admin/decision-panel.tsx`     |
+| Grant a role             | `scripts/grant-admin.ts`                      |
 
 ## Testing
 

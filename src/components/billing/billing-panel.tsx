@@ -68,7 +68,9 @@ export function BillingPanel({
       ? view.subscription
       : null;
 
-  function go(action: () => Promise<{ ok: boolean; url?: string; error?: string }>) {
+  function go(
+    action: () => Promise<{ ok: boolean; url?: string; error?: string }>,
+  ) {
     startTransition(async () => {
       const result = await action();
       if (result.ok && result.url) {
@@ -92,8 +94,9 @@ export function BillingPanel({
             ) : null}
           </CardTitle>
           <CardDescription>
-            You&apos;re on the {planTierToId(view.plan) === "pro" ? "Pro" : "Premium"}{" "}
-            plan — {view.memberCount} of {view.seatLimit} seats used.
+            You&apos;re on the{" "}
+            {planTierToId(view.plan) === "pro" ? "Pro" : "Premium"} plan —{" "}
+            {view.memberCount} of {view.seatLimit} seats used.
             {!activeSub
               ? " No active subscription; billing is complimentary during launch."
               : activeSub.cancelAtPeriodEnd && activeSub.currentPeriodEnd
@@ -144,7 +147,9 @@ export function BillingPanel({
                 <Button
                   variant="outline"
                   disabled={pending}
-                  onClick={() => go(() => startCheckoutAction("PREMIUM", interval))}
+                  onClick={() =>
+                    go(() => startCheckoutAction("PREMIUM", interval))
+                  }
                 >
                   Upgrade to Premium
                 </Button>
@@ -199,12 +204,16 @@ export function BillingPanel({
                       </span>
                     </p>
                     <p className="text-muted-foreground text-xs">
-                      {plan.seats === 1 ? "1 seat" : `Up to ${plan.seats} seats`}
+                      {plan.seats === 1
+                        ? "1 seat"
+                        : `Up to ${plan.seats} seats`}
                     </p>
                     <Button
                       className="w-full"
                       disabled={pending}
-                      onClick={() => go(() => startCheckoutAction(tier, interval))}
+                      onClick={() =>
+                        go(() => startCheckoutAction(tier, interval))
+                      }
                     >
                       Choose {plan.name.replace("Roost ", "")}
                     </Button>

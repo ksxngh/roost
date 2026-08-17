@@ -33,7 +33,10 @@ export default async function AdminLayout({
         <span className="bg-muted text-muted-foreground rounded px-2 py-0.5 text-xs font-medium">
           Admin
         </span>
-        <nav aria-label="Admin" className="ml-2 flex items-center gap-4 text-sm">
+        <nav
+          aria-label="Admin"
+          className="ml-2 flex items-center gap-4 text-sm"
+        >
           <Link
             href="/admin/verification"
             className="text-muted-foreground hover:text-foreground transition-colors"

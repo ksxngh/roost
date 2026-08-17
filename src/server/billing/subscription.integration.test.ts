@@ -42,7 +42,9 @@ function fakeStripe() {
   };
   const gateway: Pick<
     StripeGateway,
-    "ensureCustomer" | "createSubscriptionCheckout" | "createBillingPortalSession"
+    | "ensureCustomer"
+    | "createSubscriptionCheckout"
+    | "createBillingPortalSession"
   > = {
     async ensureCustomer(input) {
       calls.customers.push(input);
@@ -142,9 +144,15 @@ describe("startSubscriptionCheckout", () => {
     const { ownerId, businessId } = await makeBusiness();
     const { gateway } = fakeStripe();
 
-    await startSubscriptionCheckout(ownerId, businessId, PlanTier.PRO, "monthly", {
-      gateway,
-    });
+    await startSubscriptionCheckout(
+      ownerId,
+      businessId,
+      PlanTier.PRO,
+      "monthly",
+      {
+        gateway,
+      },
+    );
     const first = await prisma.subscription.findUniqueOrThrow({
       where: { businessId },
     });
@@ -206,9 +214,15 @@ describe("openBillingPortal", () => {
   it("opens the portal for an existing customer", async () => {
     const { ownerId, businessId } = await makeBusiness();
     const { gateway } = fakeStripe();
-    await startSubscriptionCheckout(ownerId, businessId, PlanTier.PRO, "monthly", {
-      gateway,
-    });
+    await startSubscriptionCheckout(
+      ownerId,
+      businessId,
+      PlanTier.PRO,
+      "monthly",
+      {
+        gateway,
+      },
+    );
 
     const { url } = await openBillingPortal(ownerId, businessId, { gateway });
     expect(url).toBe("https://portal.test");
@@ -366,9 +380,15 @@ describe("cancelStripeSubscription", () => {
   it("cancels and reverts the plan", async () => {
     const { ownerId, businessId } = await makeBusiness();
     const { gateway } = fakeStripe();
-    await startSubscriptionCheckout(ownerId, businessId, PlanTier.PRO, "monthly", {
-      gateway,
-    });
+    await startSubscriptionCheckout(
+      ownerId,
+      businessId,
+      PlanTier.PRO,
+      "monthly",
+      {
+        gateway,
+      },
+    );
     const { stripeCustomerId } = await prisma.subscription.findUniqueOrThrow({
       where: { businessId },
     });

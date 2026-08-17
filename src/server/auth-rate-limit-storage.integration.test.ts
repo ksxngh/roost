@@ -76,7 +76,11 @@ describe("consume", () => {
   });
 
   it("fails open when Redis is unreachable", async () => {
-    const broken = new Redis({ port: 1, lazyConnect: true, maxRetriesPerRequest: 0 });
+    const broken = new Redis({
+      port: 1,
+      lazyConnect: true,
+      maxRetriesPerRequest: 0,
+    });
     // Force every command to reject.
     broken.incr = () => Promise.reject(new Error("down")) as never;
     const store = redisRateLimitStorage({ redis: broken });

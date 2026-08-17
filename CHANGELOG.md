@@ -4,6 +4,37 @@ All notable changes are documented here. Format follows
 [Keep a Changelog](https://keepachangelog.com/); versions follow semver
 (pre-1.0: minor = milestone).
 
+## [0.19.0] — 2026-08-10 · Milestone 11d: CD & deploy
+
+The app is deployable: production images, a publish pipeline, and the health
+and migration wiring an orchestrator needs.
+
+### Added
+
+- **Production Docker images** — one multi-stage `Dockerfile` builds two
+  targets: `web` (Next.js standalone output, non-root, with a liveness
+  `HEALTHCHECK`) and `worker` (source + deps + Prisma schema, so the same image
+  also runs `prisma migrate deploy`).
+- **`output: "standalone"`** in `next.config.ts` for a lean, traced runtime.
+- **Health probes** — `GET /api/health` (liveness, no external checks) and
+  `GET /api/ready` (readiness: pings Postgres and Redis, `503` naming the
+  failure). Liveness restarts a container; readiness gates traffic.
+- **CD pipeline** (`.github/workflows/cd.yml`) — publishes both images to GHCR
+  on green CI of `main` and on `v*` tags, with layer caching.
+- **`docker-compose.yml`** — self-host the full stack (Postgres, Redis, a
+  one-shot migrate step web/worker wait on, web, worker).
+- **`.dockerignore`** and **`docs/deployment.md`**; 2 new tests.
+
+### Notes
+
+- The build stage sets throwaway `DATABASE_URL`/`BETTER_AUTH_SECRET`
+  placeholders because `next build` evaluates server modules; real secrets are
+  injected at runtime, never baked in.
+- Going live still needs the deployer's own managed Postgres/Redis, real Stripe
+  keys, and the final platform-specific deploy step (`kubectl`/`flyctl`/…),
+  which is left to the host. The image build, probes, and migration flow are
+  the platform-agnostic parts delivered here.
+
 ## [0.18.0] — 2026-08-10 · Milestone 11c: Accessibility pass
 
 Keyboard and screen-reader scaffolding across the shells.
@@ -113,7 +144,7 @@ provider billing a client) — here Roost is the merchant.
 - **Seat-aware downgrade guard** — checkout refuses a plan whose seats are
   fewer than the current team size, the one place a plan change is initiated.
 - **Webhook-driven entitlement** — `customer.subscription.created/updated/
-  deleted` set `Business.plan` from the subscription's paying status; a
+deleted` set `Business.plan` from the subscription's paying status; a
   customer-ownership check rejects spoofed `metadata.businessId`. State is only
   ever written from the verified, idempotent webhook, never the redirect.
 - **Graceful degradation** — without the `STRIPE_PRICE_*` env vars the billing
