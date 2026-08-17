@@ -22,6 +22,7 @@ describe("siteConfig", () => {
     // time, not undefined, which broke `??`. `new URL("")` throws, so this
     // failed the whole build (see CHANGELOG). `||` must be used instead.
     vi.stubEnv("NEXT_PUBLIC_APP_URL", "");
+    vi.stubEnv("VERCEL_PROJECT_PRODUCTION_URL", "");
     vi.resetModules();
     const { siteConfig: reloaded } = await import("@/lib/site-config");
     expect(reloaded.url).toBe("http://localhost:3000");
@@ -33,6 +34,17 @@ describe("siteConfig", () => {
     vi.resetModules();
     const { siteConfig: reloaded } = await import("@/lib/site-config");
     expect(reloaded.url).toBe("https://roost.example.com");
+  });
+
+  it("derives the URL from the Vercel production domain when no override is set", async () => {
+    // On Vercel with no explicit NEXT_PUBLIC_APP_URL, the app must still know
+    // its own https origin — otherwise auth falls back to localhost and every
+    // sign-in fails its origin check.
+    vi.stubEnv("NEXT_PUBLIC_APP_URL", "");
+    vi.stubEnv("VERCEL_PROJECT_PRODUCTION_URL", "roost.vercel.app");
+    vi.resetModules();
+    const { siteConfig: reloaded } = await import("@/lib/site-config");
+    expect(reloaded.url).toBe("https://roost.vercel.app");
   });
 });
 

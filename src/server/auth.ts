@@ -17,9 +17,30 @@ export const googleAuthEnabled = Boolean(
   env.GOOGLE_CLIENT_ID && env.GOOGLE_CLIENT_SECRET,
 );
 
+/**
+ * Origins Better Auth accepts sign-in/up requests from, beyond the baseURL.
+ *
+ * On Vercel a user may hit the stable production alias *or* the
+ * deployment-specific URL, and preview deploys each have their own host. We
+ * trust the current deployment's `VERCEL_URL` and the production domain so the
+ * origin check never blocks a legitimate request against our own deployments —
+ * without opening up to every `*.vercel.app`.
+ */
+function trustedOrigins(): string[] {
+  const origins = new Set([siteConfig.url]);
+  // Vercel-injected platform vars, not part of our app config contract.
+  const { VERCEL_URL, VERCEL_PROJECT_PRODUCTION_URL } = process.env;
+  if (VERCEL_URL) origins.add(`https://${VERCEL_URL}`);
+  if (VERCEL_PROJECT_PRODUCTION_URL) {
+    origins.add(`https://${VERCEL_PROJECT_PRODUCTION_URL}`);
+  }
+  return [...origins];
+}
+
 export const auth = betterAuth({
   appName: siteConfig.name,
   baseURL: siteConfig.url,
+  trustedOrigins: trustedOrigins(),
   secret: env.BETTER_AUTH_SECRET,
   database: prismaAdapter(prisma, { provider: "postgresql" }),
   session: {

@@ -1,5 +1,6 @@
 {
   "$schema": "https://openapi.vercel.sh/vercel.json",
+  "buildCommand": "prisma migrate deploy && npm run seed && next build",
   "crons": [
     {
       "path": "/api/cron/booking-reminders",

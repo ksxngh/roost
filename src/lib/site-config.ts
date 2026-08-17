@@ -15,6 +15,24 @@ import {
   type LucideIcon,
 } from "lucide-react";
 
+/**
+ * The app's canonical public URL.
+ *
+ * 1. `NEXT_PUBLIC_APP_URL` — an explicit override (e.g. a custom domain).
+ * 2. `VERCEL_PROJECT_PRODUCTION_URL` — Vercel injects the project's stable
+ *    production domain, so a Vercel deploy knows its own origin with **no**
+ *    manual configuration. Without this, auth would fall back to localhost and
+ *    every sign-in would fail its origin check.
+ * 3. localhost for development.
+ */
+function resolveAppUrl(): string {
+  if (process.env.NEXT_PUBLIC_APP_URL) return process.env.NEXT_PUBLIC_APP_URL;
+  if (process.env.VERCEL_PROJECT_PRODUCTION_URL) {
+    return `https://${process.env.VERCEL_PROJECT_PRODUCTION_URL}`;
+  }
+  return "http://localhost:3000";
+}
+
 export const siteConfig = {
   name: "Roost",
   /** Shown to homeowners on the marketplace. */
@@ -23,10 +41,14 @@ export const siteConfig = {
   /** Shown to providers on the business side. */
   businessDescription:
     "Win local customers and run everything behind the work: scheduling, quotes, invoicing, and your whole client list.",
+  // The app's own public origin. Resolved server-side only — no client
+  // component renders this, so the browser never needs it (the auth client and
+  // other client code use the current origin instead).
+  //
   // `||`, not `??`: Next.js inlines an *unset* NEXT_PUBLIC_ var as an empty
   // string at build time, not `undefined`, so `??` would let "" through and
-  // `new URL("")` below would throw. `||` falls back on any falsy value.
-  url: process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000",
+  // `new URL("")` in the root layout's metadataBase would throw.
+  url: resolveAppUrl(),
   supportEmail: "support@roost.local",
   /**
    * Legal identity, used by the Terms and Privacy pages. Replace `entity` and
