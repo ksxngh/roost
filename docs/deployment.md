@@ -106,13 +106,20 @@ no queue:
 
 | Route                         | Schedule (`vercel.json`) | Replaces worker job |
 | ----------------------------- | ------------------------ | ------------------- |
-| `/api/cron/booking-reminders` | hourly                   | `booking-reminders` |
+| `/api/cron/booking-reminders` | daily 13:00 UTC          | `booking-reminders` |
 | `/api/cron/document-expiry`   | daily 08:00 UTC          | `document-expiry`   |
+
+Both schedules default to **once daily**, which runs on the free Hobby plan —
+Vercel Cron on Hobby is capped at one run per day. This is safe: both sweeps
+are idempotent (a booking is only reminded once, gated on `reminderSentAt`),
+so a daily run just means less fine-grained timing than the worker's 15-minute
+sweep, not a missed or duplicate reminder. On a **Pro** plan you can tighten
+`booking-reminders` back to hourly (`0 * * * *`) or finer for reminders closer
+to the moment they're due.
 
 Both routes require `Authorization: Bearer $CRON_SECRET`, which Vercel Cron
 sends automatically once `CRON_SECRET` is set. Without the secret the routes
-fail closed in production. Sub-daily cron requires a Vercel **Pro** plan (Hobby
-runs crons at most once per day).
+fail closed in production.
 
 Nothing in the request path enqueues BullMQ work, so **Redis is optional** on
 Vercel — it is used only for auth rate limiting, which fails open if absent.

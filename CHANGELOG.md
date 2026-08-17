@@ -4,6 +4,16 @@ All notable changes are documented here. Format follows
 [Keep a Changelog](https://keepachangelog.com/); versions follow semver
 (pre-1.0: minor = milestone).
 
+## [0.21.1] — 2026-08-16 · Hobby-plan cron default
+
+- `vercel.json`'s `booking-reminders` schedule moves from hourly to daily
+  (13:00 UTC): Vercel Cron on the free **Hobby** plan is capped at one run per
+  day, and hourly was rejected at deploy. Safe because the sweep is idempotent
+  — a booking is reminded once, gated on `reminderSentAt` — so daily just means
+  less fine-grained timing, never a missed or duplicate reminder. Tighten to
+  hourly or finer on a **Pro** plan for reminders closer to the moment they're
+  due.
+
 ## [0.21.0] — 2026-08-16 · Serverless (Vercel) support
 
 Roost can now run on Vercel, where there is no long-running worker.
