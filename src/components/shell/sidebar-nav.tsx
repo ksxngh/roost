@@ -14,15 +14,22 @@ import type { NavItem } from "@/lib/site-config";
 export function SidebarNav({
   items,
   onNavigate,
+  label = "Main navigation",
 }: {
   items: NavItem[];
   onNavigate?: () => void;
+  /**
+   * Accessible name for this landmark. Two nav lists render side by side, so
+   * each needs a distinct label — otherwise a screen reader announces two
+   * identical "navigation" regions with no way to tell them apart.
+   */
+  label?: string;
 }) {
   const pathname = usePathname();
   const activeSegment = pathname.split("/")[1] ?? "";
 
   return (
-    <nav aria-label="Main navigation" className="flex flex-col gap-1">
+    <nav aria-label={label} className="flex flex-col gap-1">
       {items.map((item) => {
         const isActive = activeSegment === item.segment;
         return (

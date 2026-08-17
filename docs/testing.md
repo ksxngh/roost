@@ -51,7 +51,28 @@ project already pinned; the vector extension is unused for now) and
 `redis:8-alpine`
 service containers via `TEST_DATABASE_URL` and `REDIS_URL`.
 
-## Current suite (944 tests)
+## Accessibility
+
+Accessibility is enforced structurally, not bolted on. Every interactive
+element is reached by role and accessible name in tests (so an icon-only button
+without an `aria-label` fails its test), and the shells carry the landmark
+scaffolding a screen-reader or keyboard user relies on:
+
+- A **skip-to-main-content link** (`src/components/skip-link.tsx`) is the first
+  focusable element on the home page and both shells (provider app, admin). It
+  is `sr-only` until focused, then jumps focus to `<main id="main-content"
+  tabindex="-1">`.
+- **Landmarks are uniquely labelled** — the two sidebar nav lists are "Main
+  navigation" and "Settings" so they are distinguishable, and the admin bar's
+  nav is labelled too. Icon-only controls all carry `aria-label`; decorative
+  icons are `aria-hidden`.
+- Focus is never suppressed without a visible replacement: buttons and links
+  have `focus-visible` rings from the design system.
+
+Deferred to a later slice: automated axe-core assertions and Playwright
+keyboard-flow E2E (with the rest of E2E — see below).
+
+## Current suite (947 tests)
 
 | Area                                                    | Coverage                                                                                                                                                                                                                                                                          |
 | ------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |

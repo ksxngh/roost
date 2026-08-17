@@ -10,6 +10,7 @@ import {
 } from "lucide-react";
 
 import { BrandMark } from "@/components/brand-mark";
+import { MAIN_CONTENT_ID, SkipLink } from "@/components/skip-link";
 import { ThemeToggle } from "@/components/theme-toggle";
 import { Button } from "@/components/ui/button";
 import {
@@ -73,6 +74,7 @@ const providerPoints = [
 export default function LandingPage() {
   return (
     <div className="flex min-h-svh flex-col">
+      <SkipLink />
       <header className="mx-auto flex h-16 w-full max-w-6xl items-center justify-between px-4">
         <BrandMark />
         <div className="flex items-center gap-2">
@@ -86,7 +88,7 @@ export default function LandingPage() {
         </div>
       </header>
 
-      <main className="flex-1">
+      <main id={MAIN_CONTENT_ID} tabIndex={-1} className="flex-1 outline-none">
         {/* Homeowner-facing hero: the marketplace is the front door. */}
         <section className="mx-auto flex w-full max-w-4xl flex-col items-center px-4 pt-20 pb-16 text-center">
           <h1 className="max-w-3xl text-4xl font-semibold tracking-tight text-balance sm:text-6xl">

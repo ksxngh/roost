@@ -4,6 +4,7 @@ import { Menu } from "lucide-react";
 import { useState } from "react";
 
 import { BrandMark } from "@/components/brand-mark";
+import { MAIN_CONTENT_ID, SkipLink } from "@/components/skip-link";
 import { SidebarNav } from "@/components/shell/sidebar-nav";
 import { UserMenu, type UserMenuUser } from "@/components/shell/user-menu";
 import { ThemeToggle } from "@/components/theme-toggle";
@@ -34,6 +35,7 @@ export function AppShell({
 
   return (
     <div className="flex min-h-svh w-full">
+      <SkipLink />
       <aside className="bg-sidebar border-sidebar-border sticky top-0 hidden h-svh w-60 shrink-0 flex-col border-r md:flex">
         <div className="flex h-14 items-center px-4">
           <BrandMark href="/dashboard" />
@@ -41,7 +43,7 @@ export function AppShell({
         <Separator />
         <div className="flex flex-1 flex-col justify-between overflow-y-auto p-3">
           <SidebarNav items={businessNav} />
-          <SidebarNav items={settingsNav} />
+          <SidebarNav items={settingsNav} label="Settings" />
         </div>
       </aside>
 
@@ -72,6 +74,7 @@ export function AppShell({
                 />
                 <SidebarNav
                   items={settingsNav}
+                  label="Settings"
                   onNavigate={() => setMobileNavOpen(false)}
                 />
               </div>
@@ -81,7 +84,13 @@ export function AppShell({
           <ThemeToggle />
           <UserMenu user={user} />
         </header>
-        <main className="flex-1 p-4 md:p-8">{children}</main>
+        <main
+          id={MAIN_CONTENT_ID}
+          tabIndex={-1}
+          className="flex-1 p-4 outline-none md:p-8"
+        >
+          {children}
+        </main>
       </div>
     </div>
   );

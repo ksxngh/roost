@@ -24,6 +24,16 @@ describe("SidebarNav", () => {
     }
   });
 
+  it("names the landmark with a custom label so two navs stay distinct", () => {
+    render(<SidebarNav items={businessNav} label="Settings" />);
+    expect(
+      screen.getByRole("navigation", { name: "Settings" }),
+    ).toBeInTheDocument();
+    expect(
+      screen.queryByRole("navigation", { name: "Main navigation" }),
+    ).not.toBeInTheDocument();
+  });
+
   it("marks only the active section with aria-current", () => {
     mockUsePathname.mockReturnValue("/schedule");
     render(<SidebarNav items={businessNav} />);

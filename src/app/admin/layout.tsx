@@ -2,6 +2,7 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 
 import { BrandMark } from "@/components/brand-mark";
+import { MAIN_CONTENT_ID, SkipLink } from "@/components/skip-link";
 import { ThemeToggle } from "@/components/theme-toggle";
 import { PlatformRole } from "@/generated/prisma/enums";
 import { meetsPlatformRole, platformRoleOf } from "@/server/admin/access";
@@ -26,12 +27,13 @@ export default async function AdminLayout({
 
   return (
     <div className="flex min-h-svh flex-col">
+      <SkipLink />
       <header className="bg-background/80 sticky top-0 z-40 flex h-14 items-center gap-4 border-b px-4 backdrop-blur sm:px-6">
         <BrandMark href="/admin" />
         <span className="bg-muted text-muted-foreground rounded px-2 py-0.5 text-xs font-medium">
           Admin
         </span>
-        <nav className="ml-2 flex items-center gap-4 text-sm">
+        <nav aria-label="Admin" className="ml-2 flex items-center gap-4 text-sm">
           <Link
             href="/admin/verification"
             className="text-muted-foreground hover:text-foreground transition-colors"
@@ -46,7 +48,11 @@ export default async function AdminLayout({
           <ThemeToggle />
         </div>
       </header>
-      <main className="mx-auto w-full max-w-5xl flex-1 px-4 py-8 sm:px-6">
+      <main
+        id={MAIN_CONTENT_ID}
+        tabIndex={-1}
+        className="mx-auto w-full max-w-5xl flex-1 px-4 py-8 outline-none sm:px-6"
+      >
         {children}
       </main>
     </div>

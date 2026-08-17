@@ -21,8 +21,9 @@ begins.
 | 11  | Admin, hardening, deploy         | Moderation, verification queue, rate limits, WCAG, CD                         | 🔶 In progress |
 
 Milestone 11 is being delivered in slices: **11a — platform admin & the
-verification queue** (approve/reject/suspend/reinstate) and **11b — Redis-backed
-auth rate limiting** are done. Still to come: a WCAG pass, and CD/deploy.
+verification queue** (approve/reject/suspend/reinstate), **11b — Redis-backed
+auth rate limiting**, and **11c — accessibility pass** (skip links, uniquely
+labelled landmarks) are done. Still to come: **11d — CD/deploy**.
 
 Milestones 4 and 5 are where the marketplace becomes real — everything
 before them exists to make sure there is something worth booking.

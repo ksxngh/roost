@@ -4,6 +4,31 @@ All notable changes are documented here. Format follows
 [Keep a Changelog](https://keepachangelog.com/); versions follow semver
 (pre-1.0: minor = milestone).
 
+## [0.18.0] — 2026-08-10 · Milestone 11c: Accessibility pass
+
+Keyboard and screen-reader scaffolding across the shells.
+
+### Added
+
+- **Skip-to-main-content link** (`SkipLink`) — the first focusable element on
+  the home page, the provider app shell, and the admin shell. Hidden until
+  focused, then moves focus to `<main id="main-content" tabindex="-1">`.
+- A `label` prop on `SidebarNav` so the two nav lists announce as distinct
+  landmarks ("Main navigation" and "Settings") instead of two identical ones.
+- 3 new tests.
+
+### Changed
+
+- The admin top-bar nav is now a labelled landmark.
+
+### Notes
+
+- The audit confirmed existing hygiene holds: every icon-only button already
+  carries an `aria-label`, every dialog a title, no image lacks `alt`, and
+  tests query by role/accessible name so regressions surface as test failures.
+- Deferred with the rest of E2E: automated axe-core and Playwright keyboard
+  flows.
+
 ## [0.17.0] — 2026-08-10 · Milestone 11b: Redis-backed auth rate limiting
 
 Credential-endpoint rate limits now hold across instances instead of resetting

@@ -5,11 +5,10 @@ run their business with. Homeowners find a licensed, insured pro and book
 them; the pro gets scheduling, quotes, invoicing, and a client list in the
 same account.
 
-> **Status:** Milestone 11b complete — auth rate limiting is now backed by
-> shared Redis storage, so credential-endpoint limits hold across instances.
-> (11a delivered the `/admin` verification queue: platform roles and the
-> approve/reject/suspend/reinstate workflow with an append-only audit trail.)
-> Still ahead in Milestone 11: a WCAG pass and CD/deploy. See
+> **Status:** Milestone 11c complete — an accessibility pass adding
+> skip-to-content links and uniquely labelled landmarks across the shells.
+> (11a delivered the `/admin` verification queue; 11b moved auth rate limiting
+> onto shared Redis.) Last slice ahead: 11d — CD/deploy. See
 > [docs/roadmap.md](docs/roadmap.md).
 
 ## Stack
