@@ -25,6 +25,17 @@ export const siteConfig = {
     "Win local customers and run everything behind the work: scheduling, quotes, invoicing, and your whole client list.",
   url: process.env.NEXT_PUBLIC_APP_URL ?? "http://localhost:3000",
   supportEmail: "support@roost.local",
+  /**
+   * Legal identity, used by the Terms and Privacy pages. Replace `entity` and
+   * `jurisdiction` with your registered company and governing law before
+   * launch, and bump `effectiveDate` whenever the documents change. These
+   * templates are a starting point — have counsel review them.
+   */
+  legal: {
+    entity: "Roost Technologies Inc.",
+    jurisdiction: "the Province of British Columbia, Canada",
+    effectiveDate: "August 16, 2026",
+  },
 } as const;
 
 export type NavItem = {

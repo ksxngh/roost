@@ -53,7 +53,7 @@ export function LoginForm({ googleEnabled }: { googleEnabled: boolean }) {
     <Card>
       <CardHeader>
         <CardTitle className="text-xl">Welcome back</CardTitle>
-        <CardDescription>Sign in to continue studying.</CardDescription>
+        <CardDescription>Sign in to your Roost account.</CardDescription>
       </CardHeader>
       <CardContent className="space-y-4">
         {googleEnabled ? (

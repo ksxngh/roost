@@ -4,6 +4,41 @@ All notable changes are documented here. Format follows
 [Keep a Changelog](https://keepachangelog.com/); versions follow semver
 (pre-1.0: minor = milestone).
 
+## [0.20.0] — 2026-08-16 · Milestone 12: Launch readiness
+
+The polish and trust surfaces a real launch needs before pitching businesses.
+
+### Added
+
+- **Legal pages** — `/legal/terms` (Terms of Service) and `/legal/privacy`
+  (Privacy Policy), written for a two-sided home-services marketplace, with
+  company entity, jurisdiction, and effective date driven from `siteConfig`.
+  Templates — have counsel review before launch.
+- **Shared marketing footer** with the legal links, both audiences' entry
+  points, and a labelled navigation landmark; adopted on the home page.
+- **SEO** — `robots.txt` (public crawlable, app/admin/API disallowed),
+  a dynamic `sitemap.xml` (static pages, service categories, and every ACTIVE
+  storefront), and site-wide Open Graph + Twitter Card metadata.
+- **Security headers** on every response — HSTS, `X-Content-Type-Options`,
+  `X-Frame-Options: DENY`, `Referrer-Policy`, and a restrictive
+  `Permissions-Policy`.
+- **Branded error surfaces** — a styled 404 (`not-found`), a route error
+  boundary (`error`), and a dependency-free root `global-error`.
+- 7 new tests.
+
+### Fixed
+
+- Replaced leftover pre-pivot copy ("study material", "continue studying") on
+  the signup and login forms with Roost messaging.
+
+### Notes
+
+- The legal documents are solid starting templates, not legal advice; have a
+  lawyer review them, and set your real entity, jurisdiction, support email,
+  and domain in `siteConfig` before launch.
+- A full script `Content-Security-Policy` is deferred (needs per-request
+  nonces under Next hydration); the low-risk headers above ship now.
+
 ## [0.19.0] — 2026-08-10 · Milestone 11d: CD & deploy
 
 The app is deployable: production images, a publish pipeline, and the health

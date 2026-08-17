@@ -33,6 +33,7 @@ import {
 } from "@/server/businesses/businesses";
 import {
   getPublicStorefront,
+  listActiveStorefrontSlugs,
   listServiceCategories,
   searchStorefronts,
 } from "@/server/businesses/public";
@@ -528,6 +529,19 @@ describe("public queries", () => {
     expect(storefront?.serviceAreas).toEqual([
       { city: "Surrey", region: "BC" },
     ]);
+  });
+
+  it("lists only ACTIVE storefront slugs for the sitemap", async () => {
+    const active = await makeActive("Sitemap Sparks");
+    const draft = await makeActive("Sitemap Drafts");
+    await prisma.business.update({
+      where: { id: draft.business.id },
+      data: { status: BusinessStatus.DRAFT },
+    });
+
+    const slugs = (await listActiveStorefrontSlugs()).map((b) => b.slug);
+    expect(slugs).toContain(active.business.slug);
+    expect(slugs).not.toContain(draft.business.slug);
   });
 
   it.each([

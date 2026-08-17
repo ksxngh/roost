@@ -124,3 +124,16 @@ export async function listServiceCategories() {
     select: { id: true, slug: true, name: true, description: true },
   });
 }
+
+/**
+ * Slugs of every publicly listed storefront, for the sitemap. Only ACTIVE
+ * businesses are included — the same visibility rule the public pages enforce,
+ * so the sitemap never advertises a draft or suspended business.
+ */
+export async function listActiveStorefrontSlugs() {
+  return prisma.business.findMany({
+    where: { status: BusinessStatus.ACTIVE },
+    orderBy: { updatedAt: "desc" },
+    select: { slug: true, updatedAt: true },
+  });
+}

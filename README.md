@@ -5,13 +5,13 @@ run their business with. Homeowners find a licensed, insured pro and book
 them; the pro gets scheduling, quotes, invoicing, and a client list in the
 same account.
 
-> **Status:** Milestone 11 complete — the app is deployable. 11d adds the
-> production Docker images (web + worker), a CD pipeline publishing to GHCR,
-> health/readiness probes, and self-hosting compose. (11a delivered the
-> `/admin` verification queue; 11b moved auth rate limiting onto shared Redis;
-> 11c was the accessibility pass.) All eleven milestones are done — see
-> [docs/deployment.md](docs/deployment.md) to ship it, and
-> [docs/roadmap.md](docs/roadmap.md) for the journey.
+> **Status:** Launch-ready (Milestone 12). On top of the eleven build
+> milestones, the app now has Terms & Privacy pages, a marketing footer, SEO
+> (robots, sitemap, Open Graph), security headers, and branded error/404
+> pages. See [docs/deployment.md](docs/deployment.md) to ship it and
+> [docs/roadmap.md](docs/roadmap.md) for the journey. Before going live, set
+> your real entity/jurisdiction/support email/domain in `siteConfig` and have
+> counsel review the legal templates.
 
 ## Stack
 

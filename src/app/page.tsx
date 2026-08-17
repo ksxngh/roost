@@ -10,6 +10,7 @@ import {
 } from "lucide-react";
 
 import { BrandMark } from "@/components/brand-mark";
+import { SiteFooter } from "@/components/marketing/site-footer";
 import { MAIN_CONTENT_ID, SkipLink } from "@/components/skip-link";
 import { ThemeToggle } from "@/components/theme-toggle";
 import { Button } from "@/components/ui/button";
@@ -188,12 +189,7 @@ export default function LandingPage() {
         </section>
       </main>
 
-      <footer className="text-muted-foreground mx-auto flex w-full max-w-6xl flex-col gap-2 px-4 py-10 text-sm sm:flex-row sm:items-center sm:justify-between">
-        <span>
-          © {new Date().getFullYear()} {siteConfig.name}
-        </span>
-        <span>{siteConfig.description}</span>
-      </footer>
+      <SiteFooter />
     </div>
   );
 }

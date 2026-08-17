@@ -53,7 +53,7 @@ export function SignupForm({ googleEnabled }: { googleEnabled: boolean }) {
       <CardHeader>
         <CardTitle className="text-xl">Create your account</CardTitle>
         <CardDescription>
-          Start turning your notes into study material.
+          Book trusted home services, or set up your business on Roost.
         </CardDescription>
       </CardHeader>
       <CardContent className="space-y-4">
