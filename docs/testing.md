@@ -51,7 +51,7 @@ project already pinned; the vector extension is unused for now) and
 `redis:8-alpine`
 service containers via `TEST_DATABASE_URL` and `REDIS_URL`.
 
-## Current suite (939 tests)
+## Current suite (944 tests)
 
 | Area                                                    | Coverage                                                                                                                                                                                                                                                                          |
 | ------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
@@ -73,6 +73,7 @@ service containers via `TEST_DATABASE_URL` and `REDIS_URL`.
 | `billing/prices` + `subscription` _(integration)_       | Price ↔ tier round-tripping, `subscriptionsConfigured` gating; customer create-and-reuse, owner-only checkout and portal, the seat-aware downgrade guard, paying-vs-cancelled entitlement mapping, and the webhook's rejection of spoofed `metadata.businessId`                    |
 | `admin/verification` _(integration)_                    | Platform-role ranking and gating, queue visibility and oldest-first ordering, each of the four moderation transitions, the stamp-once `verifiedAt`, the invalid-transition guard writing nothing, STAFF-read-vs-ADMIN-decide enforcement, and an attributable audit row with the reason emailed |
 | `rate-limit` _(integration)_                            | Limit enforcement, remaining counts, per-key isolation, TTL, window rollover (with a pinned clock)                                                                                                                                                                                |
+| `auth-rate-limit-storage` _(integration)_               | The Redis storage Better Auth uses: atomic `consume` counts to the limit then blocks with a real retry-after, keys stay isolated, the window is set once (expires rather than slides), it fails open when Redis is down, and the `get`/`set` fallback round-trips with a bounded TTL |
 | `storage/local-storage`                                 | Round-trip, binary safety, atomic overwrite, missing keys, no temp-file leakage, path-traversal rejection (traversal, absolute, backslash, null byte)                                                                                                                             |
 | `OnboardingForm`                                        | Submit gating, value normalization, category cap and toggling, duplicate/removed areas, nested add-area form not submitting the outer form, server errors                                                                                                                         |
 | `ProfileForm` / `ServiceAreaEditor` / `SubmitForReview` | Prefill, null-vs-empty handling, trimming, province uppercasing, add/remove wiring, disabled-until-ready submission, surfaced server errors                                                                                                                                       |

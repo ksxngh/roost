@@ -4,6 +4,31 @@ All notable changes are documented here. Format follows
 [Keep a Changelog](https://keepachangelog.com/); versions follow semver
 (pre-1.0: minor = milestone).
 
+## [0.17.0] — 2026-08-10 · Milestone 11b: Redis-backed auth rate limiting
+
+Credential-endpoint rate limits now hold across instances instead of resetting
+per process.
+
+### Added
+
+- **`redisRateLimitStorage`** — a Better Auth `customStorage` backed by the
+  shared Redis. The atomic `consume` path (one `INCR`, window TTL set only on
+  creation) closes the concurrent-bypass gap of a get-then-set limiter; the
+  legacy `get`/`set` members are implemented with a bounded TTL to satisfy the
+  interface.
+- 5 new tests (count-to-limit, key isolation, window expiry, fail-open, record
+  round-trip).
+
+### Changed
+
+- Better Auth's limiter moves from per-instance memory to Redis. Behind more
+  than one instance an in-memory limiter multiplied the effective limit by the
+  instance count and let brute force spread across processes; the shared store
+  makes each limit global. The limits themselves are unchanged.
+- The limiter **fails open** on a Redis outage (request allowed, failure
+  logged): locking users out of sign-in during a cache blip is worse than
+  briefly losing one layer of defence.
+
 ## [0.16.0] — 2026-08-10 · Milestone 11a: Admin & verification queue
 
 The marketplace can finally publish a business. A platform-operator surface at

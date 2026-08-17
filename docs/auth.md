@@ -50,12 +50,27 @@ Credential endpoints are throttled in `src/server/auth.ts`:
 
 Limits are keyed by client address and enforced in the HTTP layer — direct
 `auth.api.*` calls from server code bypass them by design, which is why the
-tests exercise `auth.handler` with real `Request` objects.
+tests exercise `auth.handler` with real `Request` objects. Rate limiting is
+enabled in **every** environment, not just production, so the same protection
+runs in development and tests.
 
-> **Known limitation:** the default limiter stores counters in memory, so
-> limits are per-instance. Milestone 3 moves them to Redis secondary storage
-> when it introduces Redis; until then, a multi-instance deployment would
-> multiply the effective limit by the instance count.
+### Shared Redis storage
+
+Counters live in Redis, not each instance's memory, via a `customStorage`
+implementation (`src/server/auth-rate-limit-storage.ts`) plugged into Better
+Auth. Behind more than one instance an in-memory limiter would multiply the
+effective limit by the instance count and let a brute-force attempt simply
+spread across processes; the shared store makes each limit hold globally.
+
+The atomic `consume` path — a single Redis `INCR`, with the window's TTL set
+only when the counter is first created — is what Better Auth uses. Doing the
+check and increment in one step closes the concurrent-bypass gap where many
+simultaneous requests each read a stale count before any increment lands.
+
+The limiter **fails open**: if Redis is unreachable a request is allowed rather
+than denied. Locking every user out of sign-in during a cache blip is worse
+than briefly losing one layer of defence — passwords are still hashed and the
+endpoints still validate. Failures are logged.
 
 ## Email
 

@@ -21,9 +21,8 @@ begins.
 | 11  | Admin, hardening, deploy         | Moderation, verification queue, rate limits, WCAG, CD                         | 🔶 In progress |
 
 Milestone 11 is being delivered in slices: **11a — platform admin & the
-verification queue** is done (businesses can now be approved, rejected,
-suspended, and reinstated). Still to come: migrating Better Auth onto the
-shared Redis rate limiter, a WCAG pass, and CD/deploy.
+verification queue** (approve/reject/suspend/reinstate) and **11b — Redis-backed
+auth rate limiting** are done. Still to come: a WCAG pass, and CD/deploy.
 
 Milestones 4 and 5 are where the marketplace becomes real — everything
 before them exists to make sure there is something worth booking.
@@ -40,9 +39,10 @@ provider even before the marketplace has demand, which is deliberate.
 
 Deliberately deferred, tracked so it doesn't get lost:
 
-- **Rate-limit storage** — a shared Redis limiter exists
-  (`src/server/rate-limit.ts`); Better Auth's own endpoints still use its
-  in-memory limiter. Migrate in Milestone 11.
+- ~~**Rate-limit storage** — Better Auth's endpoints used an in-memory
+  limiter.~~ **Done in Milestone 11b**: a Redis `customStorage` backs Better
+  Auth's limiter so credential-endpoint limits hold across instances. See
+  [auth.md](auth.md#shared-redis-storage).
 - **Email verification enforcement** — verification mail is sent but sign-in
   is not blocked on it. Flip once a production email provider is configured.
 - **Storage purge job** — soft-deleted records keep their stored objects.

@@ -5,6 +5,7 @@ import { nextCookies } from "better-auth/next-js";
 import { serverEnv } from "@/lib/env";
 import { siteConfig } from "@/lib/site-config";
 import { PASSWORD_MIN_LENGTH } from "@/lib/validations/auth";
+import { redisRateLimitStorage } from "@/server/auth-rate-limit-storage";
 import { prisma } from "@/server/db";
 import { createMailer } from "@/server/mailer";
 
@@ -31,12 +32,15 @@ export const auth = betterAuth({
       maxAge: 60 * 5,
     },
   },
-  // Credential endpoints are the highest-value target in the app; throttle
-  // them regardless of the global limiter that arrives with Redis.
+  // Credential endpoints are the highest-value target in the app. Enabled in
+  // every environment (not just production) and backed by Redis, so the limits
+  // hold across instances instead of resetting per process. See
+  // `auth-rate-limit-storage.ts` and docs/auth.md.
   rateLimit: {
     enabled: true,
     window: 60,
     max: 60,
+    customStorage: redisRateLimitStorage(),
     customRules: {
       "/sign-in/email": { window: 60, max: 5 },
       "/sign-up/email": { window: 60 * 60, max: 10 },
