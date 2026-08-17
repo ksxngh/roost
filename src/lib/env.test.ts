@@ -63,9 +63,41 @@ describe("parseServerEnv", () => {
     const env = parseServerEnv({ ...base, PATH: "/usr/bin", HOME: "/home/u" });
     expect(env.NODE_ENV).toBe("development");
   });
+
+  it("treats a blank optional/defaulted var as unset rather than invalid", () => {
+    // Regression: a hosting dashboard (Vercel included) can leave an env var
+    // entry present with an empty value. `.default()` only kicks in for a
+    // truly-absent key, so an empty string used to fail validation instead of
+    // falling back — e.g. REDIS_URL="" threw "Invalid URL" though nobody
+    // meant to configure Redis at all.
+    const env = parseServerEnv({
+      ...base,
+      REDIS_URL: "",
+      LOCAL_STORAGE_DIR: "",
+      MAX_UPLOAD_MB: "",
+      STRIPE_SECRET_KEY: "",
+    });
+    expect(env.REDIS_URL).toBe("redis://localhost:6379");
+    expect(env.LOCAL_STORAGE_DIR).toBe(".storage");
+    expect(env.MAX_UPLOAD_MB).toBe(25);
+    expect(env.STRIPE_SECRET_KEY).toBeUndefined();
+  });
+
+  it("still requires DATABASE_URL and BETTER_AUTH_SECRET when blank", () => {
+    // Blanking a required field must not silently pass — only fields with a
+    // default or that are optional get the "blank means unset" treatment.
+    expect(() =>
+      parseServerEnv({ DATABASE_URL: "", BETTER_AUTH_SECRET: "" }),
+    ).toThrow(/DATABASE_URL/);
+  });
 });
 
 describe("parseClientEnv", () => {
+  it("falls back to localhost when the app URL is blank, not absent", () => {
+    const env = parseClientEnv({ NEXT_PUBLIC_APP_URL: "" });
+    expect(env.NEXT_PUBLIC_APP_URL).toBe("http://localhost:3000");
+  });
+
   it("defaults the app URL for local development", () => {
     const env = parseClientEnv({});
     expect(env.NEXT_PUBLIC_APP_URL).toBe("http://localhost:3000");

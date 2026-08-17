@@ -94,10 +94,30 @@ function formatIssues(error: z.ZodError): string {
     .join("\n");
 }
 
+/**
+ * Treat a blank string the same as an absent variable.
+ *
+ * Zod's `.default()` only substitutes for `undefined` — an explicitly present
+ * but empty value fails validation instead of falling back. That is not a
+ * hypothetical: hosting dashboards (Vercel included) routinely create a env
+ * var entry with an empty value when a field is added but left blank, and the
+ * key still ends up in `process.env` as `""`. Stripping blanks here means an
+ * unfilled optional field behaves exactly like a variable nobody set.
+ */
+function withoutBlanks(
+  source: Record<string, string | undefined>,
+): Record<string, string | undefined> {
+  const cleaned: Record<string, string | undefined> = {};
+  for (const [key, value] of Object.entries(source)) {
+    cleaned[key] = value === "" ? undefined : value;
+  }
+  return cleaned;
+}
+
 export function parseServerEnv(
   source: Record<string, string | undefined> = process.env,
 ): ServerEnv {
-  const result = serverSchema.safeParse(source);
+  const result = serverSchema.safeParse(withoutBlanks(source));
   if (!result.success) {
     throw new Error(
       `Invalid server environment variables:\n${formatIssues(result.error)}`,
@@ -109,7 +129,7 @@ export function parseServerEnv(
 export function parseClientEnv(
   source: Record<string, string | undefined> = process.env,
 ): ClientEnv {
-  const result = clientSchema.safeParse(source);
+  const result = clientSchema.safeParse(withoutBlanks(source));
   if (!result.success) {
     throw new Error(
       `Invalid client environment variables:\n${formatIssues(result.error)}`,

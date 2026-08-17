@@ -4,13 +4,29 @@ All notable changes are documented here. Format follows
 [Keep a Changelog](https://keepachangelog.com/); versions follow semver
 (pre-1.0: minor = milestone).
 
+## [0.21.3] — 2026-08-16 · Blank env vars no longer break optional/defaulted config
+
+### Fixed
+
+- **Build-breaking bug**: `serverEnv()`/`clientEnv()` failed validation when an
+  optional or defaulted variable (`REDIS_URL`, `LOCAL_STORAGE_DIR`,
+  `MAX_UPLOAD_MB`, any `STRIPE_*` key, etc.) was present in `process.env` but
+  blank — e.g. a Vercel dashboard entry added with no value typed in. Zod's
+  `.default()` only substitutes for a truly _absent_ key, so an empty string
+  was validated as-is and rejected (`REDIS_URL=""` threw "Invalid URL" though
+  nobody meant to configure Redis). Both parsers now normalize `""` to
+  `undefined` before validation, so a blank field behaves exactly like an unset
+  one. `DATABASE_URL` and `BETTER_AUTH_SECRET` are unaffected — they have no
+  default and still fail fast (with a clearer message) when blank.
+- 4 regression tests.
+
 ## [0.21.2] — 2026-08-16 · Fix Vercel build crash on unset app URL
 
 ### Fixed
 
 - **Build-breaking bug**: `siteConfig.url` used `??` to fall back to
   `http://localhost:3000` when `NEXT_PUBLIC_APP_URL` is unset. Next.js inlines
-  an *unset* `NEXT_PUBLIC_*` var as an empty string at build time, not
+  an _unset_ `NEXT_PUBLIC_*` var as an empty string at build time, not
   `undefined` — `??` only falls back on those, so `""` sailed through and
   `new URL("")` in the root layout's `metadataBase` threw `Invalid URL`,
   failing the entire Vercel build at `/_not-found`. Switched to `||`, which
