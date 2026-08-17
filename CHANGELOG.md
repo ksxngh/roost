@@ -4,6 +4,19 @@ All notable changes are documented here. Format follows
 [Keep a Changelog](https://keepachangelog.com/); versions follow semver
 (pre-1.0: minor = milestone).
 
+## [0.21.2] — 2026-08-16 · Fix Vercel build crash on unset app URL
+
+### Fixed
+
+- **Build-breaking bug**: `siteConfig.url` used `??` to fall back to
+  `http://localhost:3000` when `NEXT_PUBLIC_APP_URL` is unset. Next.js inlines
+  an *unset* `NEXT_PUBLIC_*` var as an empty string at build time, not
+  `undefined` — `??` only falls back on those, so `""` sailed through and
+  `new URL("")` in the root layout's `metadataBase` threw `Invalid URL`,
+  failing the entire Vercel build at `/_not-found`. Switched to `||`, which
+  falls back on any falsy value. 2 regression tests reload the module with the
+  env var stubbed to `""` and to a real value.
+
 ## [0.21.1] — 2026-08-16 · Hobby-plan cron default
 
 - `vercel.json`'s `booking-reminders` schedule moves from hourly to daily

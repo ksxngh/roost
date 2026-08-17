@@ -1,4 +1,4 @@
-import { describe, expect, it } from "vitest";
+import { afterEach, describe, expect, it, vi } from "vitest";
 
 import { businessNav, settingsNav, siteConfig } from "@/lib/site-config";
 
@@ -10,6 +10,29 @@ describe("siteConfig", () => {
 
   it("has a valid URL", () => {
     expect(() => new URL(siteConfig.url)).not.toThrow();
+  });
+
+  afterEach(() => {
+    vi.unstubAllEnvs();
+    vi.resetModules();
+  });
+
+  it("falls back to localhost when NEXT_PUBLIC_APP_URL is an empty string", async () => {
+    // Regression: Next.js inlines an *unset* NEXT_PUBLIC_ var as "" at build
+    // time, not undefined, which broke `??`. `new URL("")` throws, so this
+    // failed the whole build (see CHANGELOG). `||` must be used instead.
+    vi.stubEnv("NEXT_PUBLIC_APP_URL", "");
+    vi.resetModules();
+    const { siteConfig: reloaded } = await import("@/lib/site-config");
+    expect(reloaded.url).toBe("http://localhost:3000");
+    expect(() => new URL(reloaded.url)).not.toThrow();
+  });
+
+  it("uses a real value of NEXT_PUBLIC_APP_URL when one is set", async () => {
+    vi.stubEnv("NEXT_PUBLIC_APP_URL", "https://roost.example.com");
+    vi.resetModules();
+    const { siteConfig: reloaded } = await import("@/lib/site-config");
+    expect(reloaded.url).toBe("https://roost.example.com");
   });
 });
 

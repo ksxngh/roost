@@ -23,7 +23,10 @@ export const siteConfig = {
   /** Shown to providers on the business side. */
   businessDescription:
     "Win local customers and run everything behind the work: scheduling, quotes, invoicing, and your whole client list.",
-  url: process.env.NEXT_PUBLIC_APP_URL ?? "http://localhost:3000",
+  // `||`, not `??`: Next.js inlines an *unset* NEXT_PUBLIC_ var as an empty
+  // string at build time, not `undefined`, so `??` would let "" through and
+  // `new URL("")` below would throw. `||` falls back on any falsy value.
+  url: process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000",
   supportEmail: "support@roost.local",
   /**
    * Legal identity, used by the Terms and Privacy pages. Replace `entity` and
