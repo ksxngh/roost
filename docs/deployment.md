@@ -1,7 +1,15 @@
 # Deployment
 
-How Roost ships to production. The app is one Next.js server plus one
-background worker, backed by Postgres, Redis, and an object store.
+How Roost ships to production. There are two supported shapes:
+
+- **Container** (any Docker host, Fly.io, Render, Kubernetes) — a long-running
+  web server plus a long-running worker. Covered by the sections below.
+- **Vercel** (serverless) — the web app runs as functions and the two sweeps
+  run as **Vercel Cron** instead of a worker. See
+  [Deploying to Vercel](#deploying-to-vercel).
+
+The app is one Next.js server plus one background worker, backed by Postgres,
+Redis, and an object store.
 
 ## What runs
 
@@ -88,6 +96,51 @@ docker compose up --build
 
 For a managed deployment, drop the `postgres`/`redis` services and point
 `DATABASE_URL`/`REDIS_URL` at the managed endpoints.
+
+## Deploying to Vercel
+
+Vercel is serverless, so there is **no long-running worker**. Instead, the two
+sweeps run as **Vercel Cron** jobs that hit secured routes — the sweeps are
+stateless and re-derive their work from the database, so a fixed schedule needs
+no queue:
+
+| Route                         | Schedule (`vercel.json`) | Replaces worker job |
+| ----------------------------- | ------------------------ | ------------------- |
+| `/api/cron/booking-reminders` | hourly                   | `booking-reminders` |
+| `/api/cron/document-expiry`   | daily 08:00 UTC          | `document-expiry`   |
+
+Both routes require `Authorization: Bearer $CRON_SECRET`, which Vercel Cron
+sends automatically once `CRON_SECRET` is set. Without the secret the routes
+fail closed in production. Sub-daily cron requires a Vercel **Pro** plan (Hobby
+runs crons at most once per day).
+
+Nothing in the request path enqueues BullMQ work, so **Redis is optional** on
+Vercel — it is used only for auth rate limiting, which fails open if absent.
+For real protection, still point `REDIS_URL` at a managed Redis (e.g. Upstash,
+`rediss://…`).
+
+### Steps
+
+1. **Provision managed Postgres** with the `btree_gist` extension (Vercel
+   Postgres / Neon both support it). Enable it once: `CREATE EXTENSION IF NOT
+EXISTS btree_gist;`
+2. **Provision managed Redis** (Upstash) and note its `rediss://` URL.
+3. **Import the Git repo** into Vercel (or `vercel deploy` from the CLI).
+4. Set the **build command** to run migrations first:
+   `npx prisma migrate deploy && next build`.
+5. Set **environment variables** (Project → Settings → Environment Variables):
+   `DATABASE_URL`, `REDIS_URL`, `BETTER_AUTH_SECRET`, `NEXT_PUBLIC_APP_URL`
+   (your Vercel URL or custom domain), `CRON_SECRET` (`openssl rand -hex 32`),
+   and Stripe/email/S3 vars as needed.
+6. **Deploy.** `vercel.json` registers the cron jobs automatically.
+7. After the first deploy, run the one-time seed against the production DB
+   (`npm run seed` with `DATABASE_URL` pointing at it) and grant yourself admin
+   (`npm run grant-admin -- you@example.com`).
+8. Confirm `GET /api/ready` returns `200`, then trigger
+   `GET /api/cron/booking-reminders` once with the Bearer token to smoke-test.
+
+`output: "standalone"` is skipped automatically on Vercel (detected via the
+`VERCEL` env var), so the platform uses its own build output.
 
 ## Required environment
 

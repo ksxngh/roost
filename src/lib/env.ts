@@ -29,6 +29,10 @@ const serverSchema = z.object({
   EMAIL_FROM: z.email().default("noreply@roost.local"),
   // Queues and background jobs.
   REDIS_URL: z.url({ protocol: /^rediss?$/ }).default("redis://localhost:6379"),
+  // Shared secret that authorizes the scheduled sweep routes (`/api/cron/*`).
+  // On Vercel, set this and Vercel Cron sends it as a Bearer token. On a
+  // worker-based deploy it is unused. See docs/deployment.md.
+  CRON_SECRET: z.string().min(1).optional(),
 
   // Object storage. With no bucket configured the app falls back to the
   // filesystem driver, so local development needs no cloud account.

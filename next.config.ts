@@ -30,10 +30,10 @@ const securityHeaders = [
 
 const nextConfig: NextConfig = {
   reactCompiler: true,
-  // Emit a self-contained server bundle (`.next/standalone`) that ships only
-  // the files and dependencies actually used, for a lean production Docker
-  // image. See the Dockerfile and docs/deployment.md.
-  output: "standalone",
+  // Emit a self-contained server bundle (`.next/standalone`) for a lean Docker
+  // image (see the Dockerfile). On Vercel, which uses its own build output,
+  // leave the mode unset so we don't fight the platform.
+  output: process.env.VERCEL ? undefined : "standalone",
   async headers() {
     return [{ source: "/:path*", headers: securityHeaders }];
   },

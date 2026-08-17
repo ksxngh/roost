@@ -4,6 +4,34 @@ All notable changes are documented here. Format follows
 [Keep a Changelog](https://keepachangelog.com/); versions follow semver
 (pre-1.0: minor = milestone).
 
+## [0.21.0] — 2026-08-16 · Serverless (Vercel) support
+
+Roost can now run on Vercel, where there is no long-running worker.
+
+### Added
+
+- **Cron sweep routes** — `GET /api/cron/booking-reminders` and
+  `GET /api/cron/document-expiry` call the same stateless sweeps the worker
+  runs, so they need no queue. Authorized by `Authorization: Bearer
+$CRON_SECRET` (which Vercel Cron sends), failing closed in production when the
+  secret is unset and open in development for local testing.
+- **`vercel.json`** registering the two cron schedules (reminders hourly,
+  expiry daily 08:00 UTC).
+- **`CRON_SECRET`** env var; a Vercel deployment guide in `docs/deployment.md`.
+- 4 new tests for the cron authorizer.
+
+### Changed
+
+- `output: "standalone"` is now skipped on Vercel (detected via the `VERCEL`
+  env var); the platform uses its own build output while Docker builds keep the
+  standalone bundle.
+
+### Notes
+
+- Nothing in the request path enqueues BullMQ work, so Redis is optional on
+  Vercel (used only for rate limiting, which fails open). Postgres still needs
+  `btree_gist`. Sub-daily cron requires a Vercel Pro plan.
+
 ## [0.20.0] — 2026-08-16 · Milestone 12: Launch readiness
 
 The polish and trust surfaces a real launch needs before pitching businesses.
