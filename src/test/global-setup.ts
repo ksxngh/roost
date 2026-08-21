@@ -15,6 +15,10 @@ export default function setup() {
 
   process.env.DATABASE_URL = url;
   process.env.BETTER_AUTH_SECRET ??= "test-secret-test-secret-test-secret-42";
+  // The queue, rate-limit, and health suites need Redis; pin it so tests run
+  // with Redis "configured" (matching CI), and the health readiness check
+  // includes the Redis probe.
+  process.env.REDIS_URL ??= "redis://localhost:6379";
 
   // Subscription price ids, so the billing layer runs its configured path.
   process.env.STRIPE_PRICE_PRO_MONTHLY ??= "price_pro_m";

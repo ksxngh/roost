@@ -53,15 +53,24 @@ export const auth = betterAuth({
       maxAge: 60 * 5,
     },
   },
-  // Credential endpoints are the highest-value target in the app. Enabled in
-  // every environment (not just production) and backed by Redis, so the limits
-  // hold across instances instead of resetting per process. See
-  // `auth-rate-limit-storage.ts` and docs/auth.md.
+  // Credential endpoints are the highest-value target in the app, so rate
+  // limiting is enabled in every environment.
+  //
+  // The Redis-backed store is attached ONLY when a Redis is actually
+  // configured. Without one, the shared connection (maxRetriesPerRequest: null,
+  // required by BullMQ) would block every auth request forever instead of
+  // failing open — which is exactly what hung sign-up on a Vercel deploy that
+  // had no REDIS_URL. With no Redis we fall back to Better Auth's in-memory
+  // limiter, which never hangs; add Upstash (set REDIS_URL) to get the shared,
+  // cross-instance limiter back. See `auth-rate-limit-storage.ts` and
+  // docs/auth.md.
   rateLimit: {
     enabled: true,
     window: 60,
     max: 60,
-    customStorage: redisRateLimitStorage(),
+    ...(process.env.REDIS_URL
+      ? { customStorage: redisRateLimitStorage() }
+      : {}),
     customRules: {
       "/sign-in/email": { window: 60, max: 5 },
       "/sign-up/email": { window: 60 * 60, max: 10 },

@@ -14,6 +14,16 @@ export type ReadinessReport = {
   dependencies: DependencyStatus[];
 };
 
+/** Reject if `promise` has not settled within `ms`, so a probe can't hang. */
+function withTimeout<T>(promise: Promise<T>, ms: number): Promise<T> {
+  return Promise.race([
+    promise,
+    new Promise<never>((_, reject) =>
+      setTimeout(() => reject(new Error(`timed out after ${ms}ms`)), ms),
+    ),
+  ]);
+}
+
 /** Time a check, capturing latency and turning any throw into `ok: false`. */
 async function probe(
   name: string,
@@ -21,7 +31,9 @@ async function probe(
 ): Promise<DependencyStatus> {
   const start = Date.now();
   try {
-    await check();
+    // Bounded so a stuck dependency (e.g. an unreachable Redis whose client
+    // never gives up) can never make readiness itself hang.
+    await withTimeout(Promise.resolve().then(check), 3000);
     return { name, ok: true, latencyMs: Date.now() - start };
   } catch (error) {
     return {
@@ -43,10 +55,13 @@ async function probe(
  * does not stack onto the other's latency.
  */
 export async function checkReadiness(): Promise<ReadinessReport> {
-  const dependencies = await Promise.all([
-    probe("postgres", () => prisma.$queryRaw`SELECT 1`),
-    probe("redis", () => redisConnection().ping()),
-  ]);
+  const checks = [probe("postgres", () => prisma.$queryRaw`SELECT 1`)];
+  // Redis is optional (only rate limiting uses it). Ping it only when one is
+  // configured, so a deploy without Redis is still reported ready.
+  if (process.env.REDIS_URL) {
+    checks.push(probe("redis", () => redisConnection().ping()));
+  }
+  const dependencies = await Promise.all(checks);
 
   return {
     ready: dependencies.every((dependency) => dependency.ok),
