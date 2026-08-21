@@ -1,34 +1,10 @@
 import type { BetterAuthRateLimitStorage, RateLimit } from "better-auth";
-import { Redis } from "ioredis";
+import type { Redis } from "ioredis";
 
-import { serverEnv } from "@/lib/env";
+import { redisFailFast } from "@/server/queue/connection";
 
 /** Namespace for every auth rate-limit key, kept apart from queue keys. */
 const PREFIX = "auth:rl";
-
-/**
- * A **fail-fast** Redis client dedicated to auth rate limiting.
- *
- * Deliberately NOT the shared BullMQ connection: that one uses
- * `maxRetriesPerRequest: null` so queue commands never give up — but for an
- * auth request that means a down Redis blocks the whole request forever (the
- * bug that hung sign-up). Here every command fails within ~1s if Redis is
- * unreachable, so `consume()` catches it and fails open instead of hanging.
- */
-let cachedClient: Redis | undefined;
-function rateLimitRedis(): Redis {
-  cachedClient ??= new Redis(serverEnv().REDIS_URL, {
-    maxRetriesPerRequest: 1,
-    enableOfflineQueue: false,
-    connectTimeout: 2000,
-    commandTimeout: 1000,
-    retryStrategy: (times) => (times > 3 ? null : Math.min(times * 200, 800)),
-  });
-  // Swallow connection errors; `consume`/`get`/`set` each handle failures and
-  // fail open. Without a listener, ioredis would emit unhandled 'error' events.
-  cachedClient.on("error", () => {});
-  return cachedClient;
-}
 /**
  * TTL cap for the legacy record path. The atomic `consume` path sets its own
  * per-window TTL; this only bounds the `get`/`set` fallback so a stray record
@@ -58,7 +34,7 @@ const RECORD_TTL_SECONDS = 60 * 60 * 24;
 export function redisRateLimitStorage(
   deps: { redis?: Redis } = {},
 ): BetterAuthRateLimitStorage {
-  const client = () => deps.redis ?? rateLimitRedis();
+  const client = () => deps.redis ?? redisFailFast();
 
   return {
     async consume(key, rule) {

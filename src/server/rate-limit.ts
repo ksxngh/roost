@@ -1,6 +1,9 @@
 import type { Redis } from "ioredis";
 
-import { redisConnection } from "@/server/queue/connection";
+import { redisConfigured, redisFailFast } from "@/server/queue/connection";
+
+/** Result returned when Redis is absent or unreachable — never block the user. */
+const ALLOW: RateLimitResult = { allowed: true, remaining: 1, resetSeconds: 1 };
 
 export type RateLimitResult = {
   allowed: boolean;
@@ -29,26 +32,37 @@ export async function checkRateLimit({
   windowSeconds: number;
   redis?: Redis;
 }): Promise<RateLimitResult> {
-  const client = redis ?? redisConnection();
+  // No Redis configured (e.g. a Vercel deploy without Upstash): fail open
+  // rather than reach for a connection that will never succeed. Without this,
+  // the request — an upload, a booking — hangs forever waiting on Redis.
+  if (!redis && !redisConfigured) return ALLOW;
+
+  const client = redis ?? redisFailFast();
   const window = Math.floor(Date.now() / 1000 / windowSeconds);
   const redisKey = `ratelimit:${key}:${window}`;
 
-  const [count] = (await client
-    .multi()
-    .incr(redisKey)
-    // Expire slightly past the window so the key cannot outlive its purpose.
-    .expire(redisKey, windowSeconds + 1)
-    .exec()) as [[Error | null, number], [Error | null, number]];
+  try {
+    const [count] = (await client
+      .multi()
+      .incr(redisKey)
+      // Expire slightly past the window so the key cannot outlive its purpose.
+      .expire(redisKey, windowSeconds + 1)
+      .exec()) as [[Error | null, number], [Error | null, number]];
 
-  const used = count[1];
-  const resetSeconds =
-    (window + 1) * windowSeconds - Math.floor(Date.now() / 1000);
+    const used = count[1];
+    const resetSeconds =
+      (window + 1) * windowSeconds - Math.floor(Date.now() / 1000);
 
-  return {
-    allowed: used <= limit,
-    remaining: Math.max(0, limit - used),
-    resetSeconds: Math.max(1, resetSeconds),
-  };
+    return {
+      allowed: used <= limit,
+      remaining: Math.max(0, limit - used),
+      resetSeconds: Math.max(1, resetSeconds),
+    };
+  } catch (error) {
+    // A Redis blip must never block a legitimate action. Fail open, logged.
+    console.error("[rate-limit] check failed, allowing:", error);
+    return ALLOW;
+  }
 }
 
 /** Limits for expensive authenticated endpoints. */

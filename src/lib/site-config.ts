@@ -49,7 +49,7 @@ export const siteConfig = {
   // string at build time, not `undefined`, so `??` would let "" through and
   // `new URL("")` in the root layout's metadataBase would throw.
   url: resolveAppUrl(),
-  supportEmail: "support@roost.local",
+  supportEmail: "roosthelper@gmail.com",
   /**
    * Legal identity, used by the Terms and Privacy pages. Replace `entity` and
    * `jurisdiction` with your registered company and governing law before
