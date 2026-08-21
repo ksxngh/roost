@@ -100,6 +100,22 @@ model Verification {
   @@map("verification")
 }
 
+/// Object storage inside the database — the default when no S3-compatible
+/// bucket is configured. Keeps uploaded files (licence/insurance documents)
+/// truly private: they live behind the same auth as everything else and are
+/// only ever served through the authenticated `/api/documents` routes, never a
+/// public URL. `data` is a Postgres `bytea`. Fine for launch scale; move to S3
+/// (set the `S3_*` vars) when volume grows. See `db-storage.ts`.
+model StoredObject {
+  key         String   @id
+  data        Bytes
+  contentType String
+  size        Int
+  createdAt   DateTime @default(now())
+
+  @@map("stored_object")
+}
+
 // ─────────────────────────────────────────────────────────────────────────
 // Domain models (hand-written — see the note on User above)
 // ─────────────────────────────────────────────────────────────────────────

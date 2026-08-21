@@ -1,7 +1,5 @@
-import path from "node:path";
-
 import { serverEnv } from "@/lib/env";
-import { LocalStorage } from "@/server/storage/local-storage";
+import { DbStorage } from "@/server/storage/db-storage";
 import { S3Storage } from "@/server/storage/s3-storage";
 import type { Storage } from "@/server/storage/types";
 
@@ -12,8 +10,12 @@ let cached: Storage | undefined;
 
 /**
  * Pick the storage driver from configuration: S3-compatible when a bucket and
- * credentials are present, filesystem otherwise. Development therefore needs
- * no cloud account, and production is one env change away.
+ * credentials are present, otherwise the database.
+ *
+ * The database driver is the default so uploads work everywhere with zero
+ * extra setup — including serverless hosts (Vercel) where the filesystem is
+ * read-only and there is no local disk to fall back to. Set the `S3_*` vars to
+ * switch to a bucket once volume outgrows the database.
  */
 export function createStorage(env = serverEnv()): Storage {
   if (env.S3_BUCKET && env.S3_ACCESS_KEY_ID && env.S3_SECRET_ACCESS_KEY) {
@@ -25,7 +27,7 @@ export function createStorage(env = serverEnv()): Storage {
       endpoint: env.S3_ENDPOINT,
     });
   }
-  return new LocalStorage(path.resolve(process.cwd(), env.LOCAL_STORAGE_DIR));
+  return new DbStorage();
 }
 
 /** Process-wide storage instance. */
