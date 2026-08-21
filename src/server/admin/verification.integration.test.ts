@@ -18,6 +18,7 @@ import { meetsPlatformRole, requirePlatformRole } from "@/server/admin/access";
 import {
   InvalidTransitionError,
   getReviewDetail,
+  listBusinesses,
   listReviewQueue,
   moderateBusiness,
 } from "@/server/admin/verification";
@@ -132,6 +133,43 @@ describe("listReviewQueue", () => {
   it("refuses a plain user", async () => {
     const user = await makeUser();
     await expect(listReviewQueue(user.id)).rejects.toBeInstanceOf(
+      ForbiddenError,
+    );
+  });
+});
+
+describe("listBusinesses", () => {
+  it("returns businesses of every status, and can filter and search", async () => {
+    const staff = await makeUser(PlatformRole.STAFF);
+    const active = await makeBusiness(BusinessStatus.ACTIVE);
+    const pending = await makeBusiness(BusinessStatus.PENDING_REVIEW);
+    const suspended = await makeBusiness(BusinessStatus.SUSPENDED);
+
+    const all = await listBusinesses(staff.id);
+    const allIds = all.map((b) => b.id);
+    expect(allIds).toContain(active.business.id);
+    expect(allIds).toContain(pending.business.id);
+    expect(allIds).toContain(suspended.business.id);
+
+    const onlyActive = await listBusinesses(staff.id, {
+      status: BusinessStatus.ACTIVE,
+    });
+    expect(onlyActive.every((b) => b.status === BusinessStatus.ACTIVE)).toBe(
+      true,
+    );
+    expect(onlyActive.map((b) => b.id)).toContain(active.business.id);
+    expect(onlyActive.map((b) => b.id)).not.toContain(pending.business.id);
+
+    // Search matches the business's own name (case-insensitive).
+    const byName = await listBusinesses(staff.id, {
+      query: active.business.name.toUpperCase(),
+    });
+    expect(byName.map((b) => b.id)).toContain(active.business.id);
+  });
+
+  it("refuses a plain user", async () => {
+    const user = await makeUser();
+    await expect(listBusinesses(user.id)).rejects.toBeInstanceOf(
       ForbiddenError,
     );
   });

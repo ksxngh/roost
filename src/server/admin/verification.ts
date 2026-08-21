@@ -87,6 +87,53 @@ export async function listReviewQueue(
   }));
 }
 
+export type BusinessRow = {
+  id: string;
+  name: string;
+  slug: string;
+  status: BusinessStatus;
+  email: string | null;
+  updatedAt: Date;
+};
+
+/**
+ * Every business, for the admin's "all businesses" view — the way back to a
+ * business that has already left the review queue (e.g. to suspend an active
+ * one). Optionally filtered by status and a name/slug search. Newest activity
+ * first.
+ */
+export async function listBusinesses(
+  userId: string,
+  filter: { status?: BusinessStatus; query?: string } = {},
+): Promise<BusinessRow[]> {
+  await requirePlatformRole(userId, PlatformRole.STAFF, "view businesses");
+
+  const query = filter.query?.trim();
+  return prisma.business.findMany({
+    where: {
+      ...(filter.status ? { status: filter.status } : {}),
+      ...(query
+        ? {
+            OR: [
+              { name: { contains: query, mode: "insensitive" } },
+              { slug: { contains: query, mode: "insensitive" } },
+            ],
+          }
+        : {}),
+    },
+    orderBy: { updatedAt: "desc" },
+    select: {
+      id: true,
+      name: true,
+      slug: true,
+      status: true,
+      email: true,
+      updatedAt: true,
+    },
+    take: 200,
+  });
+}
+
 export type ReviewDetail = {
   id: string;
   name: string;
