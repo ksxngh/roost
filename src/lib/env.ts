@@ -25,6 +25,10 @@ const serverSchema = z.object({
   GOOGLE_CLIENT_ID: z.string().min(1).optional(),
   GOOGLE_CLIENT_SECRET: z.string().min(1).optional(),
   // Optional: real email delivery activates when present (console otherwise).
+  // Brevo takes precedence over Resend when both are set — it can send from a
+  // single verified sender without owning a domain, so it works before a
+  // domain is bought.
+  BREVO_API_KEY: z.string().min(1).optional(),
   RESEND_API_KEY: z.string().min(1).optional(),
   EMAIL_FROM: z.email().default("noreply@roost.local"),
   // Queues and background jobs.

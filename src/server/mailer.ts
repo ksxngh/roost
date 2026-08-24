@@ -61,13 +61,54 @@ export class ResendMailer implements Mailer {
   }
 }
 
-/** Pick the transport from configuration: Resend when a key exists. */
+/**
+ * Production transport via Brevo's transactional email API.
+ *
+ * Brevo can send from a single *verified sender address* without domain DNS
+ * setup, so it delivers real mail before a custom domain is bought — the one
+ * thing Resend can't do in that state.
+ */
+export class BrevoMailer implements Mailer {
+  constructor(
+    private readonly apiKey: string,
+    private readonly from: string,
+  ) {}
+
+  async send(message: MailMessage): Promise<void> {
+    const response = await fetch("https://api.brevo.com/v3/smtp/email", {
+      method: "POST",
+      headers: {
+        "api-key": this.apiKey,
+        "Content-Type": "application/json",
+        accept: "application/json",
+      },
+      body: JSON.stringify({
+        sender: { email: this.from, name: "Roost" },
+        to: [{ email: message.to }],
+        subject: message.subject,
+        textContent: message.text,
+      }),
+    });
+    if (!response.ok) {
+      const body = await response.text();
+      throw new Error(`Brevo rejected the email (${response.status}): ${body}`);
+    }
+  }
+}
+
+/**
+ * Pick the transport from configuration. Brevo first (works without a domain),
+ * then Resend, then the console transport when nothing is configured.
+ */
 export function createMailer(
   env: Pick<
     ReturnType<typeof serverEnv>,
-    "RESEND_API_KEY" | "EMAIL_FROM"
+    "BREVO_API_KEY" | "RESEND_API_KEY" | "EMAIL_FROM"
   > = serverEnv(),
 ): Mailer {
+  if (env.BREVO_API_KEY) {
+    return new BrevoMailer(env.BREVO_API_KEY, env.EMAIL_FROM);
+  }
   if (env.RESEND_API_KEY) {
     return new ResendMailer(env.RESEND_API_KEY, env.EMAIL_FROM);
   }
