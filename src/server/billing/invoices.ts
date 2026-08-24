@@ -322,6 +322,40 @@ export async function markInvoicePaid(
   });
 }
 
+/**
+ * Mark a sent invoice paid in full, by hand.
+ *
+ * For providers who take payment outside Stripe — cash, e-transfer, a card
+ * machine on site — which is the norm for home services. Settles the whole
+ * outstanding balance so the invoice closes and stops showing as owed. Only a
+ * SENT invoice can be settled this way: a DRAFT hasn't been issued, and PAID or
+ * VOID are already terminal.
+ */
+export async function settleInvoice(
+  userId: string,
+  businessId: string,
+  invoiceId: string,
+): Promise<void> {
+  await requireCapability(
+    userId,
+    businessId,
+    MemberCapability.BILLING,
+    "record a payment",
+  );
+
+  const invoice = await prisma.invoice.findFirst({
+    where: { id: invoiceId, businessId },
+    select: { id: true, status: true, totalCents: true, amountPaidCents: true },
+  });
+  if (!invoice) throw new NotFoundError("invoice");
+  if (invoice.status !== InvoiceStatus.SENT) {
+    throw new InvoiceNotEditableError(invoice.status);
+  }
+
+  const outstanding = invoice.totalCents - invoice.amountPaidCents;
+  await markInvoicePaid(invoice.id, outstanding);
+}
+
 export async function listInvoices(userId: string, businessId: string) {
   await requireMembership(userId, businessId);
   return prisma.invoice.findMany({

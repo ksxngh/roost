@@ -13,6 +13,7 @@ import {
   createInvoice,
   invoiceFromQuote,
   sendInvoice,
+  settleInvoice,
   updateInvoice,
   voidInvoice,
 } from "@/server/billing/invoices";
@@ -195,6 +196,13 @@ export async function sendInvoiceAction(invoiceId: string) {
 export async function voidInvoiceAction(invoiceId: string) {
   return providerMutation(({ userId, businessId }) =>
     voidInvoice(userId, businessId, invoiceId),
+  );
+}
+
+/** Mark a sent invoice paid in full, for payment taken outside Stripe. */
+export async function settleInvoiceAction(invoiceId: string) {
+  return providerMutation(({ userId, businessId }) =>
+    settleInvoice(userId, businessId, invoiceId),
   );
 }
 

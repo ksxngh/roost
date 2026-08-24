@@ -1,6 +1,6 @@
 "use client";
 
-import { Ban, ExternalLink, Send } from "lucide-react";
+import { Ban, CheckCircle2, ExternalLink, Send } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useState, useTransition } from "react";
@@ -11,7 +11,11 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { balanceCents } from "@/lib/money";
 import { formatPrice } from "@/lib/validations/scheduling";
-import { sendInvoiceAction, voidInvoiceAction } from "@/server/billing/actions";
+import {
+  sendInvoiceAction,
+  settleInvoiceAction,
+  voidInvoiceAction,
+} from "@/server/billing/actions";
 
 export type InvoiceRow = {
   id: string;
@@ -114,21 +118,37 @@ export function InvoiceList({ invoices }: { invoices: InvoiceRow[] }) {
                   ) : null}
 
                   {invoice.status === "SENT" ? (
-                    <Button
-                      size="sm"
-                      variant="ghost"
-                      disabled={busyId === invoice.id}
-                      onClick={() =>
-                        run(
-                          invoice,
-                          () => voidInvoiceAction(invoice.id),
-                          "Invoice voided.",
-                        )
-                      }
-                    >
-                      <Ban className="size-4" aria-hidden />
-                      Void
-                    </Button>
+                    <>
+                      <Button
+                        size="sm"
+                        disabled={busyId === invoice.id}
+                        onClick={() =>
+                          run(
+                            invoice,
+                            () => settleInvoiceAction(invoice.id),
+                            "Marked as paid.",
+                          )
+                        }
+                      >
+                        <CheckCircle2 className="size-4" aria-hidden />
+                        Mark paid
+                      </Button>
+                      <Button
+                        size="sm"
+                        variant="ghost"
+                        disabled={busyId === invoice.id}
+                        onClick={() =>
+                          run(
+                            invoice,
+                            () => voidInvoiceAction(invoice.id),
+                            "Invoice voided.",
+                          )
+                        }
+                      >
+                        <Ban className="size-4" aria-hidden />
+                        Void
+                      </Button>
+                    </>
                   ) : null}
 
                   {invoice.status !== "DRAFT" ? (

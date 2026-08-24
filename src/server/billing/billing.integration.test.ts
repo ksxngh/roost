@@ -26,6 +26,7 @@ import {
   listInvoices,
   markInvoicePaid,
   sendInvoice,
+  settleInvoice,
   updateInvoice,
   voidInvoice,
 } from "@/server/billing/invoices";
@@ -576,6 +577,45 @@ describe("invoice lifecycle", () => {
       where: { id: invoice.id },
     });
     expect(stored.status).toBe(InvoiceStatus.PAID);
+  });
+
+  it("settles a sent invoice paid in full by hand", async () => {
+    const { userId, businessId } = await makeBusiness();
+    const invoice = await createInvoice(userId, businessId, INVOICE);
+    await sendInvoice(userId, businessId, invoice.id);
+
+    await settleInvoice(userId, businessId, invoice.id);
+
+    const stored = await prisma.invoice.findUniqueOrThrow({
+      where: { id: invoice.id },
+    });
+    expect(stored.status).toBe(InvoiceStatus.PAID);
+    expect(stored.amountPaidCents).toBe(invoice.totalCents);
+    expect(stored.paidAt).not.toBeNull();
+  });
+
+  it("settling clears any remaining balance after a part payment", async () => {
+    const { userId, businessId } = await makeBusiness();
+    const invoice = await createInvoice(userId, businessId, INVOICE);
+    await sendInvoice(userId, businessId, invoice.id);
+    await markInvoicePaid(invoice.id, 1_000);
+
+    await settleInvoice(userId, businessId, invoice.id);
+
+    const stored = await prisma.invoice.findUniqueOrThrow({
+      where: { id: invoice.id },
+    });
+    expect(stored.status).toBe(InvoiceStatus.PAID);
+    expect(stored.amountPaidCents).toBe(invoice.totalCents);
+  });
+
+  it("refuses to settle a draft invoice", async () => {
+    const { userId, businessId } = await makeBusiness();
+    const invoice = await createInvoice(userId, businessId, INVOICE);
+
+    await expect(
+      settleInvoice(userId, businessId, invoice.id),
+    ).rejects.toBeInstanceOf(InvoiceNotEditableError);
   });
 
   it("never exposes internal identifiers to the customer", async () => {
