@@ -19,6 +19,7 @@ import {
 } from "@/server/businesses/access";
 import { publicAvailability } from "@/server/businesses/availability";
 import { linkClient } from "@/server/businesses/clients";
+import { NotServedError, isAddressServed } from "@/server/businesses/service-area";
 import { prisma } from "@/server/db";
 
 /** The customer asked for a time that is no longer on offer. */
@@ -98,9 +99,16 @@ export async function createBooking(
 
   const business = await prisma.business.findFirst({
     where: { slug, status: BusinessStatus.ACTIVE },
-    select: { id: true, timezone: true },
+    select: { id: true, name: true, timezone: true },
   });
   if (!business) throw new NotFoundError();
+
+  // Guard 0: the address must be inside the provider's service area. Checked
+  // before anything is written so an out-of-area customer is turned away with
+  // a clear reason rather than a booking the provider will only decline.
+  if (!(await isAddressServed(business.id, input))) {
+    throw new NotServedError(business.name);
+  }
 
   const servicePackage = await prisma.servicePackage.findFirst({
     where: { id: input.packageId, businessId: business.id, active: true },

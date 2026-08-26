@@ -4,6 +4,7 @@ import { ArrowLeft, Clock, MapPin } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useState, useTransition } from "react";
 
+import { AddressAutocomplete } from "@/components/booking/address-autocomplete";
 import { Button } from "@/components/ui/button";
 import {
   Card,
@@ -17,7 +18,11 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { WEEKDAY_NAMES } from "@/lib/time";
 import { formatDuration, formatPrice } from "@/lib/validations/scheduling";
-import { createBookingAction } from "@/server/businesses/booking-actions";
+import {
+  checkServiceAreaAction,
+  createBookingAction,
+} from "@/server/businesses/booking-actions";
+import type { AddressSuggestion } from "@/server/geo/geocode";
 
 export type BookableDay = {
   date: string;
@@ -84,16 +89,46 @@ export function BookingFlow({
   } | null>(null);
   const [details, setDetails] = useState(BLANK_DETAILS);
   const [error, setError] = useState<string | null>(null);
+  const [outOfArea, setOutOfArea] = useState(false);
   const [pending, startTransition] = useTransition();
 
   const bookable = days.filter((day) => day.slots.length > 0);
+
+  /**
+   * Fill the address fields from a picked suggestion, then check the provider
+   * actually serves that area — the server enforces this too, but telling the
+   * customer now saves them filling in the rest of the form for nothing.
+   */
+  function applySuggestion(suggestion: AddressSuggestion) {
+    setDetails((current) => ({
+      ...current,
+      addressLine1: suggestion.line1,
+      city: suggestion.city,
+      region: suggestion.region,
+      postalCode: suggestion.postalCode,
+    }));
+    setOutOfArea(false);
+    if (suggestion.city && suggestion.region) {
+      checkServiceAreaAction(slug, {
+        city: suggestion.city,
+        region: suggestion.region,
+      })
+        .then((result) => setOutOfArea(!result.served))
+        .catch(() => setOutOfArea(false));
+    }
+  }
 
   function field(key: keyof typeof BLANK_DETAILS) {
     return {
       value: details[key],
       onChange: (
         event: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>,
-      ) => setDetails((current) => ({ ...current, [key]: event.target.value })),
+      ) => {
+        // A manual edit to the city or province invalidates an earlier
+        // out-of-area verdict; let the server re-check on submit.
+        if (key === "city" || key === "region") setOutOfArea(false);
+        setDetails((current) => ({ ...current, [key]: event.target.value }));
+      },
     };
   }
 
@@ -247,11 +282,16 @@ export function BookingFlow({
 
               <div className="space-y-2">
                 <Label htmlFor="booking-address">Street address</Label>
-                <Input
+                <AddressAutocomplete
                   id="booking-address"
-                  autoComplete="address-line1"
-                  maxLength={160}
-                  {...field("addressLine1")}
+                  value={details.addressLine1}
+                  onValueChange={(value) =>
+                    setDetails((current) => ({
+                      ...current,
+                      addressLine1: value,
+                    }))
+                  }
+                  onSelect={applySuggestion}
                 />
               </div>
 
@@ -310,6 +350,16 @@ export function BookingFlow({
                 />
               </div>
 
+              {outOfArea ? (
+                <p
+                  role="alert"
+                  className="text-destructive border-destructive/30 bg-destructive/5 rounded-md border px-3 py-2 text-sm"
+                >
+                  Sorry — {businessName} doesn&apos;t serve {details.city} yet.
+                  Try a different address, or check their listed service areas.
+                </p>
+              ) : null}
+
               {error ? (
                 <p role="alert" className="text-destructive text-sm">
                   {error}
@@ -317,7 +367,7 @@ export function BookingFlow({
               ) : null}
 
               <div className="flex flex-wrap items-center gap-3">
-                <Button type="submit" disabled={pending}>
+                <Button type="submit" disabled={pending || outOfArea}>
                   {pending
                     ? "Requesting…"
                     : payable

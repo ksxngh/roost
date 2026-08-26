@@ -75,4 +75,10 @@ export const RATE_LIMITS = {
    * enough that filling a business's calendar takes real effort.
    */
   booking: { limit: 10, windowSeconds: 60 * 10 },
+  /**
+   * Address autocomplete fires on keystrokes (debounced) and is
+   * unauthenticated, so it is capped per client address — high enough for
+   * someone typing an address, low enough to protect the upstream geocoder.
+   */
+  geocode: { limit: 60, windowSeconds: 60 },
 } as const;

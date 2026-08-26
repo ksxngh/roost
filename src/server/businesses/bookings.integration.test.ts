@@ -37,6 +37,7 @@ import {
 } from "@/server/businesses/bookings";
 import { createBusiness } from "@/server/businesses/businesses";
 import { createPackage } from "@/server/businesses/packages";
+import { NotServedError } from "@/server/businesses/service-area";
 import { prisma } from "@/server/db";
 
 const VANCOUVER = "America/Vancouver";
@@ -235,6 +236,45 @@ describe("createBooking", () => {
       references.add(booking.reference);
     }
     expect(references.size).toBe(5);
+  });
+});
+
+describe("createBooking enforces the service area", () => {
+  it("refuses an address outside every service area", async () => {
+    const { business, servicePackage } = await listedBusiness();
+    const startAt = await firstSlot(business.slug, servicePackage.id);
+
+    await expect(
+      createBooking(
+        business.slug,
+        {
+          ...CUSTOMER,
+          city: "Kelowna",
+          region: "BC",
+          packageId: servicePackage.id,
+          startAt: startAt.toISOString(),
+        },
+        { now: NOW },
+      ),
+    ).rejects.toBeInstanceOf(NotServedError);
+  });
+
+  it("matches the service area case-insensitively", async () => {
+    const { business, servicePackage } = await listedBusiness();
+    const startAt = await firstSlot(business.slug, servicePackage.id);
+
+    const booking = await createBooking(
+      business.slug,
+      {
+        ...CUSTOMER,
+        city: "surrey",
+        region: "bc",
+        packageId: servicePackage.id,
+        startAt: startAt.toISOString(),
+      },
+      { now: NOW },
+    );
+    expect(booking.status).toBe(BookingStatus.PENDING);
   });
 });
 

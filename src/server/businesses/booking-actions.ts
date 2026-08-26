@@ -10,6 +10,9 @@ import {
   NotFoundError,
   currentMembership,
 } from "@/server/businesses/access";
+import { NotServedError, isAddressServed } from "@/server/businesses/service-area";
+import { BusinessStatus } from "@/generated/prisma/enums";
+import { prisma } from "@/server/db";
 import {
   InvalidTransitionError,
   SlotUnavailableError,
@@ -114,6 +117,7 @@ export async function createBookingAction(slug: string, input: unknown) {
   } catch (error) {
     if (
       error instanceof SlotUnavailableError ||
+      error instanceof NotServedError ||
       error instanceof NotFoundError
     ) {
       return invalid(error.message);
@@ -121,6 +125,24 @@ export async function createBookingAction(slug: string, input: unknown) {
     console.error("[booking] create failed:", error);
     return invalid("Could not book that time. Please try again.");
   }
+}
+
+/**
+ * Whether a business serves an address, for the booking form to check the
+ * moment a customer picks it — before they fill in the rest and submit.
+ * Unauthenticated like the booking itself; leaks nothing beyond what the
+ * public storefront already lists (the service areas).
+ */
+export async function checkServiceAreaAction(
+  slug: string,
+  address: { city: string; region: string },
+): Promise<{ served: boolean }> {
+  const business = await prisma.business.findFirst({
+    where: { slug, status: BusinessStatus.ACTIVE },
+    select: { id: true },
+  });
+  if (!business) return { served: true };
+  return { served: await isAddressServed(business.id, address) };
 }
 
 /** Provider-side responses. Shares the membership gate with other actions. */
