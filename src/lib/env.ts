@@ -58,6 +58,14 @@ const serverSchema = z.object({
   /** Required to verify webhook signatures; without it events are refused. */
   STRIPE_WEBHOOK_SECRET: z.string().min(1).optional(),
   /**
+   * Signing secret for the *Connect* webhook — the separate Stripe event
+   * destination that delivers connected-account events (a booking's
+   * `checkout.session.completed`, `charge.refunded`, `account.updated`).
+   * Stripe fixes an endpoint's event source at creation, so a marketplace
+   * needs two destinations with two secrets; the webhook route tries each.
+   */
+  STRIPE_CONNECT_WEBHOOK_SECRET: z.string().min(1).optional(),
+  /**
    * Roost's cut, in basis points. Applied to the service price as a Stripe
    * application fee on the connected account's charge.
    *

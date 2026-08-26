@@ -258,12 +258,30 @@ export function createStripeGateway(env = serverEnv()): StripeGateway {
     },
 
     constructEvent(payload, signature) {
-      if (!env.STRIPE_WEBHOOK_SECRET) throw new StripeNotConfiguredError();
-      return stripe.webhooks.constructEvent(
-        payload,
-        signature,
+      // A Connect platform has two event destinations — one for its own
+      // account, one for connected accounts — each with its own signing
+      // secret. An event is signed by exactly one, so try each and accept the
+      // event if any verifies. The connect secret is optional: without it,
+      // only platform events are accepted.
+      const secrets = [
         env.STRIPE_WEBHOOK_SECRET,
-      ) as { id: string; type: string; data: { object: unknown } };
+        env.STRIPE_CONNECT_WEBHOOK_SECRET,
+      ].filter((secret): secret is string => Boolean(secret));
+      if (secrets.length === 0) throw new StripeNotConfiguredError();
+
+      let lastError: unknown;
+      for (const secret of secrets) {
+        try {
+          return stripe.webhooks.constructEvent(
+            payload,
+            signature,
+            secret,
+          ) as { id: string; type: string; data: { object: unknown } };
+        } catch (error) {
+          lastError = error;
+        }
+      }
+      throw lastError;
     },
   };
 }
