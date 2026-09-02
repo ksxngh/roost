@@ -10,6 +10,7 @@ import {
 } from "lucide-react";
 
 import { BrandMark } from "@/components/brand-mark";
+import { LocationPicker } from "@/components/marketing/location-picker";
 import { SiteFooter } from "@/components/marketing/site-footer";
 import { MAIN_CONTENT_ID, SkipLink } from "@/components/skip-link";
 import { ThemeToggle } from "@/components/theme-toggle";
@@ -21,6 +22,7 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import { siteConfig } from "@/lib/site-config";
+import { listServedAreas } from "@/server/businesses/public";
 
 /** What a homeowner gets. Trust and price certainty are the whole pitch. */
 const homeownerPoints = [
@@ -72,13 +74,16 @@ const providerPoints = [
   },
 ];
 
-export default function LandingPage() {
+export default async function LandingPage() {
+  const areas = await listServedAreas();
+
   return (
     <div className="flex min-h-svh flex-col">
       <SkipLink />
       <header className="mx-auto flex h-16 w-full max-w-6xl items-center justify-between px-4">
         <BrandMark />
         <div className="flex items-center gap-2">
+          <LocationPicker areas={areas} />
           <ThemeToggle />
           <Button asChild variant="ghost" className="hidden sm:inline-flex">
             <Link href="/pricing">For business</Link>

@@ -1,3 +1,4 @@
+import { Prisma } from "@/generated/prisma/client";
 import { BusinessStatus } from "@/generated/prisma/enums";
 import { prisma } from "@/server/db";
 
@@ -62,6 +63,32 @@ export async function getPublicStorefront(slug: string) {
   });
 }
 
+/** The fields every storefront card needs; shared by search and browse-all. */
+const SUMMARY_SELECT = {
+  slug: true,
+  name: true,
+  tagline: true,
+  categories: {
+    select: { category: { select: { slug: true, name: true } } },
+  },
+  serviceAreas: {
+    select: { city: true, region: true },
+    orderBy: [{ region: "asc" }, { city: "asc" }],
+  },
+} satisfies Prisma.BusinessSelect;
+
+type SummaryRow = Prisma.BusinessGetPayload<{ select: typeof SUMMARY_SELECT }>;
+
+function toSummary(row: SummaryRow): StorefrontSummary {
+  return {
+    slug: row.slug,
+    name: row.name,
+    tagline: row.tagline,
+    categories: row.categories.map((link) => link.category),
+    areas: row.serviceAreas,
+  };
+}
+
 /**
  * Businesses serving a city, optionally narrowed to one trade.
  *
@@ -94,27 +121,49 @@ export async function searchStorefronts(params: {
     },
     take: params.limit ?? 50,
     orderBy: { name: "asc" },
-    select: {
-      slug: true,
-      name: true,
-      tagline: true,
-      categories: {
-        select: { category: { select: { slug: true, name: true } } },
-      },
-      serviceAreas: {
-        select: { city: true, region: true },
-        orderBy: [{ region: "asc" }, { city: "asc" }],
-      },
-    },
+    select: SUMMARY_SELECT,
   });
 
-  return rows.map((row) => ({
-    slug: row.slug,
-    name: row.name,
-    tagline: row.tagline,
-    categories: row.categories.map((link) => link.category),
-    areas: row.serviceAreas,
-  }));
+  return rows.map(toSummary);
+}
+
+/**
+ * Every listed business, optionally narrowed to one trade. Powers the browse
+ * page before a visitor has chosen an area, so the marketplace never opens on
+ * an empty screen.
+ */
+export async function listAllStorefronts(
+  params: { categorySlug?: string; limit?: number } = {},
+): Promise<StorefrontSummary[]> {
+  const rows = await prisma.business.findMany({
+    where: {
+      ...PUBLIC_FILTER,
+      ...(params.categorySlug
+        ? { categories: { some: { category: { slug: params.categorySlug } } } }
+        : {}),
+    },
+    take: params.limit ?? 60,
+    orderBy: { name: "asc" },
+    select: SUMMARY_SELECT,
+  });
+
+  return rows.map(toSummary);
+}
+
+/**
+ * Distinct city/region pairs that at least one listed business serves — the
+ * options for the header's area picker. Only areas with real listings are
+ * offered, so a visitor can never pick a location that returns nothing.
+ */
+export async function listServedAreas(): Promise<
+  { city: string; region: string }[]
+> {
+  return prisma.serviceArea.findMany({
+    where: { business: PUBLIC_FILTER },
+    distinct: ["city", "region"],
+    orderBy: [{ region: "asc" }, { city: "asc" }],
+    select: { city: true, region: true },
+  });
 }
 
 /** All trades, for the browse page and the onboarding picker. */

@@ -34,6 +34,8 @@ import {
 import {
   getPublicStorefront,
   listActiveStorefrontSlugs,
+  listAllStorefronts,
+  listServedAreas,
   listServiceCategories,
   searchStorefronts,
 } from "@/server/businesses/public";
@@ -574,6 +576,38 @@ describe("public queries", () => {
     await makeActive("Bright Sparks");
     const results = await searchStorefronts({ city: "surrey", region: "bc" });
     expect(results.map((row) => row.name)).toEqual(["Bright Sparks"]);
+  });
+
+  it("lists every active storefront regardless of area", async () => {
+    const a = await makeActive("All Trades A", "Surrey");
+    const b = await makeActive("All Trades B", "Burnaby");
+    const draft = await makeActive("All Trades Draft", "Surrey");
+    await prisma.business.update({
+      where: { id: draft.business.id },
+      data: { status: BusinessStatus.DRAFT },
+    });
+
+    const names = (await listAllStorefronts()).map((row) => row.name);
+    expect(names).toContain(a.business.name);
+    expect(names).toContain(b.business.name);
+    expect(names).not.toContain(draft.business.name);
+  });
+
+  it("returns only areas served by an active business, deduped", async () => {
+    await makeActive("Area One", "Surrey");
+    await makeActive("Area Two", "Surrey"); // same area — must not double up
+    await makeActive("Area Three", "Burnaby");
+    const draft = await makeActive("Area Draft", "Kelowna");
+    await prisma.business.update({
+      where: { id: draft.business.id },
+      data: { status: BusinessStatus.DRAFT },
+    });
+
+    const areas = await listServedAreas();
+    const cities = areas.map((area) => area.city);
+    expect(cities.filter((c) => c === "Surrey")).toHaveLength(1);
+    expect(cities).toContain("Burnaby");
+    expect(cities).not.toContain("Kelowna"); // draft business excluded
   });
 
   it("does not match a different city", async () => {
