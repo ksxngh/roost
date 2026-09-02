@@ -9,6 +9,7 @@ import {
   Wallet,
 } from "lucide-react";
 
+import { AreaResults } from "@/components/marketing/area-results";
 import { BrandMark } from "@/components/brand-mark";
 import { LocationPicker } from "@/components/marketing/location-picker";
 import { SiteFooter } from "@/components/marketing/site-footer";
@@ -22,7 +23,7 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import { siteConfig } from "@/lib/site-config";
-import { listServedAreas } from "@/server/businesses/public";
+import { listServedAreas, searchStorefronts } from "@/server/businesses/public";
 
 /** What a homeowner gets. Trust and price certainty are the whole pitch. */
 const homeownerPoints = [
@@ -74,8 +75,19 @@ const providerPoints = [
   },
 ];
 
-export default async function LandingPage() {
+export default async function LandingPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ city?: string; region?: string }>;
+}) {
+  const { city = "", region = "" } = await searchParams;
   const areas = await listServedAreas();
+
+  const chosen = city.trim() !== "" && region.trim() !== "";
+  const results = chosen
+    ? await searchStorefronts({ city: city.trim(), region: region.trim() })
+    : [];
+  const selected = chosen ? `${city.trim()}|${region.trim()}` : "";
 
   return (
     <div className="flex min-h-svh flex-col">
@@ -83,7 +95,7 @@ export default async function LandingPage() {
       <header className="mx-auto flex h-16 w-full max-w-6xl items-center justify-between px-4">
         <BrandMark />
         <div className="flex items-center gap-2">
-          <LocationPicker areas={areas} />
+          <LocationPicker areas={areas} selected={selected} />
           <ThemeToggle />
           <Button asChild variant="ghost" className="hidden sm:inline-flex">
             <Link href="/pricing">For business</Link>
@@ -116,6 +128,16 @@ export default async function LandingPage() {
               <Link href="/pricing">List your business</Link>
             </Button>
           </div>
+
+          {/* Picking an area in the header drops its pros in right here — no
+              page change. */}
+          {chosen ? (
+            <AreaResults
+              city={city.trim()}
+              region={region.trim()}
+              results={results}
+            />
+          ) : null}
         </section>
 
         <section
