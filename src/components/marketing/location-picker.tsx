@@ -39,11 +39,7 @@ export function LocationPicker({
   }
 
   return (
-    <label className="relative inline-flex items-center">
-      <MapPin
-        className="text-muted-foreground pointer-events-none absolute top-1/2 left-3 size-4 -translate-y-1/2"
-        aria-hidden
-      />
+    <label className="inline-flex items-center">
       <span className="sr-only">Choose your area</span>
       <select
         // Remount when the URL selection changes so the shown value follows it.
@@ -62,7 +58,7 @@ export function LocationPicker({
             { scroll: false },
           );
         }}
-        className="border-input bg-background hover:bg-accent focus-visible:ring-ring h-9 rounded-md border py-0 pr-8 pl-9 text-sm transition-colors focus-visible:ring-2 focus-visible:outline-none"
+        className="border-input bg-background hover:bg-accent focus-visible:ring-ring h-9 rounded-md border px-3 text-sm transition-colors focus-visible:ring-2 focus-visible:outline-none"
       >
         <option value="">Your area</option>
         {areas.map((area) => (
